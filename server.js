@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 
 const app = express();
 const PORT = 3000;
@@ -13,6 +14,7 @@ const SECRET_KEY = 'YOUR_SECRET_KEY'; // Секретный ключ для JWT
 // Middleware
 app.use(bodyParser.json());
 app.use(express.static('public'));
+app.use(cookieParser()); // Подключение cookie-parser
 
 // Функция для чтения пользователей из файла
 function readUsers() {
@@ -85,20 +87,29 @@ app.post('/login', (req, res) => {
 
     // Генерация токена
     const token = jwt.sign({ nickname: user.nickname }, SECRET_KEY, { expiresIn: '1h' });
-    res.json({ token });
+
+    // Установка cookie с токеном
+    res.cookie('token', token, { httpOnly: true }); // Устанавливаем cookie с токеном
+    res.json({ message: 'Вход выполнен успешно!' });
+});
+
+// Выход из аккаунта
+app.post('/logout', (req, res) => {
+    res.clearCookie('token'); // Удаляем cookie с токеном
+    res.send('Вы вышли из аккаунта.');
 });
 
 // Обработка POST-запроса для сохранения текста
 app.post('/save-text', (req, res) => {
     const { text } = req.body;
-    const token = req.headers['authorization'];
+    const token = req.cookies.token; // Получаем токен из cookies
 
     if (!token) {
         return res.status(401).send('Необходима аутентификация.');
     }
 
     try {
-        const decoded = jwt.verify(token.split(' ')[1], SECRET_KEY);
+        const decoded = jwt.verify(token, SECRET_KEY);
         const nickname = decoded.nickname;
 
         if (!text) {
