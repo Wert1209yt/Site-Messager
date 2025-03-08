@@ -1,32 +1,37 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Чат</title>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Чат</title>
 </head>
 <body>
 
 <div id="authPanel">
-<h2>Регистрация</h2>
-<input type="text" id="registerNickname" placeholder="Никнейм" required>
-<input type="password" id="registerPassword" placeholder="Пароль" required>
-<button onclick="register()">Зарегистрироваться</button>
+   <h2>Регистрация</h2>
+   <input type="text" id="registerNickname" placeholder="Никнейм" required>
+   <input type="password" id="registerPassword" placeholder="Пароль" required>
+   <button onclick="register()">Зарегистрироваться</button>
 
-<h2>Вход</h2>
-<input type="text" id="loginNickname" placeholder="Никнейм" required>
-<input type="password" id="loginPassword" placeholder="Пароль" required>
-<button onclick="login()">Войти</button>
+   <h2>Вход</h2>
+   <input type="text" id="loginNickname" placeholder="Никнейм" required>
+   <input type="password" id="loginPassword" placeholder="Пароль" required>
+   <button onclick="login()">Войти</button>
 </div>
 
 <div id="chatPanel" style="display:none;">
-<h2>Отправка текста</h2>
-<textarea id="textInput" rows="5" cols="50" placeholder="Введите текст здесь"></textarea><br>
-<button onclick="saveText()">Сохранить текст</button>
-<button onclick="logout()">Выйти</button>
+   <h2>Отправка текста</h2>
+   <textarea id="textInput" rows="5" cols="50" placeholder="Введите текст здесь"></textarea><br>
+   <button onclick="saveText()">Сохранить текст</button>
 
-<h2>Тексты пользователей</h2>
-<pre id="displayText"></pre>
+   <h2>Отправка изображения</h2>
+   <input type="file" id="imageInput" accept="image/*"><br>
+   <button onclick="uploadImage()">Отправить изображение</button>
+
+   <button onclick="logout()">Выйти</button>
+
+   <h2>Тексты пользователей</h2>
+   <pre id="displayText"></pre>
 </div>
 
 <script>
@@ -99,16 +104,40 @@ async function saveText() {
    alert(message);
 }
 
+async function uploadImage() {
+   const imageInput = document.getElementById("imageInput");
+   
+   if (!imageInput.files.length) {
+       alert("Пожалуйста выберите изображение.");
+       return;
+   }
+
+   const formData = new FormData();
+   formData.append("image", imageInput.files[0]); // Добавляем выбранное изображение
+
+   // Отправляем изображение на сервер с токеном аутентификации
+   const response = await fetch('/upload-image', {
+       method: 'POST',
+       headers: { 
+           'Authorization': `Bearer ${document.cookie.split('; ').find(row => row.startsWith('token=')).split('=')[1]}` 
+       },
+       body: formData,
+   });
+
+   const message = await response.text();
+   alert(message);
+}
+
 // Функция для обновления текста на странице
 async function updateDisplayText() {
-   const response = await fetch('/get-text');
-    
-   if (response.ok) {
-       const data = await response.text();
-       document.getElementById('displayText').innerText = data; // Обновляем содержимое
-   } else {
-       console.error('Ошибка при получении текста.');
-   }
+  const response = await fetch('/get-text');
+  
+  if (response.ok) {
+      const data = await response.text();
+      document.getElementById('displayText').innerText = data; // Обновляем содержимое
+  } else {
+      console.error("Ошибка при получении текста.");
+  }
 }
 
 // Периодическое обновление текста каждые 5 секунд
@@ -116,22 +145,22 @@ setInterval(updateDisplayText, 5000);
 
 // Проверка состояния входа при загрузке страницы
 window.onload = async function() {
-   try {
-       await updateDisplayText(); // Загружаем тексты пользователей
+  try {
+      await updateDisplayText(); // Загружаем тексты пользователей
 
-       // Проверяем наличие токена в cookies и отображаем соответствующие панели
-       const response = await fetch('/get-text'); 
-       
-       if (response.ok) { 
-           document.getElementById('authPanel').style.display = 'none'; 
-           document.getElementById('chatPanel').style.display = 'block'; 
-       } else { 
-           document.getElementById('authPanel').style.display = 'block'; 
-           document.getElementById('chatPanel').style.display = 'none'; 
-       }
-   } catch (error) {
-       console.error("Ошибка при проверке состояния входа:", error);
-   }
+      // Проверяем наличие токена в cookies и отображаем соответствующие панели
+      const response = await fetch('/get-text'); 
+      
+      if (response.ok) { 
+          document.getElementById("authPanel").style.display ="none"; 
+          document.getElementById("chatPanel").style.display ="block"; 
+      } else { 
+          document.getElementById("authPanel").style.display ="block"; 
+          document.getElementById("chatPanel").style.display ="none"; 
+      }
+  } catch (error) {
+      console.error("Ошибка при проверке состояния входа:", error);
+  }
 };
 </script>
 
