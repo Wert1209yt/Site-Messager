@@ -116,5 +116,33 @@ app.post('/save-text', (req, res) => {
             return res.status(400).send('Текст не может быть пустым.');
         }
 
-        //
-    
+        // Форматируем строку для записи
+        const formattedText = `${nickname} > ${text}\n`;
+
+        // Добавляем текст в файл
+        fs.appendFile(TEXT_FILE, formattedText, (err) => {
+            if (err) {
+                return res.status(500).send('Ошибка при сохранении файла.');
+            }
+            res.send('Текст успешно добавлен!');
+        });
+        
+    } catch (error) {
+        return res.status(401).send('Токен недействителен.');
+    }
+});
+
+// Обработка GET-запроса для получения текста
+app.get('/get-text', (req, res) => {
+    fs.readFile(TEXT_FILE, 'utf8', (err, data) => {
+        if (err) {
+            return res.status(500).send('Ошибка при чтении файла.');
+        }
+        res.send(data);
+    });
+});
+
+// Запуск сервера
+app.listen(PORT, () => {
+    console.log(`Сервер запущен на http://localhost:${PORT}`);
+});
