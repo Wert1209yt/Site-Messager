@@ -4,28 +4,39 @@ const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
+const multer = require('multer'); // Импортируем multer
 
 const app = express();
 const PORT = 3000;
 const USERS_FILE = './users.json';
 const TEXT_FILE = './shared_text.txt';
-const SECRET_KEY = 'YOUR_SECRET_KEY'; // Секретный ключ для JWT
+const SECRET_KEY = 'YOUR_SECRET_KEY';
 
-// Middleware
+// Настройка multer для хранения загруженных файлов
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/'); // Папка для сохранения загруженных изображений
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + '-' + file.originalname); // Уникальное имя файла
+    }
+});
+
+const upload = multer({ storage: storage }); // Создаем экземпляр multer
+
 app.use(bodyParser.json());
 app.use(express.static('public'));
-app.use(cookieParser()); // Подключение cookie-parser
+app.use(cookieParser());
 
-// Функция для чтения пользователей из файла
+// Чтение пользователей из файла
 function readUsers() {
     if (!fs.existsSync(USERS_FILE)) {
         fs.writeFileSync(USERS_FILE, JSON.stringify([]));
     }
-    const data = fs.readFileSync(USERS_FILE);
-    return JSON.parse(data);
+    return JSON.parse(fs.readFileSync(USERS_FILE));
 }
 
-// Функция для записи пользователей в файл
+// Запись пользователей в файл
 function writeUsers(users) {
     fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
 }
@@ -89,20 +100,20 @@ app.post('/login', (req, res) => {
     const token = jwt.sign({ nickname: user.nickname }, SECRET_KEY, { expiresIn: '1h' });
 
     // Установка cookie с токеном
-    res.cookie('token', token, { httpOnly: true }); // Устанавливаем cookie с токеном
+    res.cookie('token', token, { httpOnly: true });
     res.json({ message: 'Вход выполнен успешно!' });
 });
 
 // Выход из аккаунта
 app.post('/logout', (req, res) => {
-    res.clearCookie('token'); // Удаляем cookie с токеном
+    res.clearCookie('token');
     res.send('Вы вышли из аккаунта.');
 });
 
 // Обработка POST-запроса для сохранения текста
 app.post('/save-text', (req, res) => {
     const { text } = req.body;
-    const token = req.cookies.token; // Получаем токен из cookies
+    const token = req.cookies.token;
 
     if (!token) {
         return res.status(401).send('Необходима аутентификация.');
@@ -122,27 +133,55 @@ app.post('/save-text', (req, res) => {
         // Добавляем текст в файл
         fs.appendFile(TEXT_FILE, formattedText, (err) => {
             if (err) {
-                return res.status(500).send('Ошибка при сохранении файла.');
+                return res.status(500).send('Ошибка при сохранении текста.');
             }
             res.send('Текст успешно добавлен!');
         });
-        
+
     } catch (error) {
         return res.status(401).send('Токен недействителен.');
     }
 });
 
-// Обработка GET-запроса для получения текста
+// Обработка загрузки изображения
+app.post('/upload-image', upload.single('image'), (req, res) => {
+     const token = req.cookies.token;
+
+     if (!token) {
+         return res.status(401).send('Необходима аутентификация.');
+     }
+
+     try {
+         const decoded = jwt.verify(token, SECRET_KEY);
+         const nickname = decoded.nickname;
+
+         if (!req.file) {
+             return res.status(400).send('Изображение не загружено.');
+         }
+
+         // Форматируем строку для записи с ссылкой на изображение
+         const imageMessage = `${nickname} отправил изображение: ${req.file.path}\n`;
+
+         // Добавляем сообщение об изображении в файл
+         fs.appendFile(TEXT_FILE, imageMessage, (err) => {
+             if (err) {
+                 return res.status(500).send('Ошибка при сохранении сообщения об изображении.');
+             }
+             res.send(`Изображение успешно загружено: ${req.file.path}`);
+         });
+
+     } catch (error) {
+         return res.status(401).send('Токен недействителен.');
+     }
+});
+
+// Получение текста
 app.get('/get-text', (req, res) => {
-    fs.readFile(TEXT_FILE, 'utf8', (err, data) => {
-        if (err) {
-            return res.status(500).send('Ошибка при чтении файла.');
-        }
-        res.send(data);
-    });
+     fs.readFile(TEXT_FILE, 'utf8', (err, data) => {
+         if (err) return res.status(500).send('Ошибка при чтении файла.');
+         res.send(data);
+     });
 });
 
 // Запуск сервера
-app.listen(PORT, () => {
-    console.log(`Сервер запущен на http://localhost:${PORT}`);
-});
+app.listen(PORT, () => console.log(`Сервер запущен на http://localhost:${PORT}`));
