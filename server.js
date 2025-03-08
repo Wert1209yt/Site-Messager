@@ -10,12 +10,12 @@ const app = express();
 const PORT = 3000;
 const USERS_FILE = './users.json';
 const TEXT_FILE = './shared_text.txt';
-const SECRET_KEY = 'YOUR_SECRET_KEY';
+const SECRET_KEY = 'YOUR_SECRET_KEY'; // Замените на свой секретный ключ
 
-// Настройка multer для хранения загруженных файлов
+// Настройка multer для загрузки изображений
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, 'uploads/'); // Папка для сохранения загруженных изображений
+        cb(null, 'uploads/'); // Папка для хранения загруженных изображений
     },
     filename: function (req, file, cb) {
         cb(null, Date.now() + '-' + file.originalname); // Уникальное имя файла
@@ -26,9 +26,10 @@ const upload = multer({ storage: storage }); // Создаем экземпля�
 
 app.use(bodyParser.json());
 app.use(express.static('public'));
-app.use(cookieParser());
+app.use(cookieParser()); // Подключение cookie-parser
+app.use('/uploads', express.static('uploads')); // Делаем папку uploads доступной для клиента
 
-// Чтение пользователей из файла
+// Функция для чтения пользователей из файла
 function readUsers() {
     if (!fs.existsSync(USERS_FILE)) {
         fs.writeFileSync(USERS_FILE, JSON.stringify([]));
@@ -36,7 +37,7 @@ function readUsers() {
     return JSON.parse(fs.readFileSync(USERS_FILE));
 }
 
-// Запись пользователей в файл
+// Функция для записи пользователей в файл
 function writeUsers(users) {
     fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
 }
@@ -106,14 +107,14 @@ app.post('/login', (req, res) => {
 
 // Выход из аккаунта
 app.post('/logout', (req, res) => {
-    res.clearCookie('token');
+    res.clearCookie('token'); // Удаляем cookie с токеном
     res.send('Вы вышли из аккаунта.');
 });
 
 // Обработка POST-запроса для сохранения текста
 app.post('/save-text', (req, res) => {
     const { text } = req.body;
-    const token = req.cookies.token;
+    const token = req.cookies.token; // Получаем токен из cookies
 
     if (!token) {
         return res.status(401).send('Необходима аутентификация.');
@@ -156,16 +157,16 @@ app.post('/upload-image', upload.single('image'), (req, res) => {
          const nickname = decoded.nickname;
 
          if (!req.file) {
-             return res.status(400).send('Изображение не загружено.');
+             return res.status(400).send('Файл не загружен.');
          }
 
          // Форматируем строку для записи с ссылкой на изображение
-         const imageMessage = `${nickname} отправил изображение: ${req.file.path}\n`;
+         const imageMessage = `${nickname} отправил изображение: <img src="/uploads/${req.file.filename}" alt="Image">\n`;
 
          // Добавляем сообщение об изображении в файл
          fs.appendFile(TEXT_FILE, imageMessage, (err) => {
              if (err) {
-                 return res.status(500).send('Ошибка при сохранении сообщения об изображении.');
+                 return res.status(500).send('Ошибка при сохранении информации об изображении.');
              }
              res.send(`Изображение успешно загружено: ${req.file.path}`);
          });
@@ -175,7 +176,7 @@ app.post('/upload-image', upload.single('image'), (req, res) => {
      }
 });
 
-// Получение текста
+// Получение текста и изображений
 app.get('/get-text', (req, res) => {
      fs.readFile(TEXT_FILE, 'utf8', (err, data) => {
          if (err) return res.status(500).send('Ошибка при чтении файла.');
