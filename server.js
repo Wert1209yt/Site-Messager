@@ -50,6 +50,14 @@ app.post('/register', (req, res) => {
     users.push({ nickname, password: hashedPassword });
     writeUsers(users);
 
+    // Запись сообщения о присоединении в файл
+    const joinMessage = `${nickname} присоединился\n`;
+    fs.appendFile(TEXT_FILE, joinMessage, (err) => {
+        if (err) {
+            console.error('Ошибка при записи в файл:', err);
+        }
+    });
+
     res.status(201).send('Пользователь зарегистрирован.');
 });
 
