@@ -1,0 +1,29 @@
+  GNU nano 8.3                                                                package.json
+{
+  "name": "site-messager",
+  "version": "1.0.0",
+  "description": "Very easy site messager",
+  "main": "server.js",
+  "scripts": {
+    "test": "start",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Wert1209yt/Site-Messager.git"
+  },
+  "keywords": [
+    "qwerty"
+  ],
+  "author": "Wert1209yt",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Wert1209yt/Site-Messager/issues"
+  },
+  "homepage": "https://github.com/Wert1209yt/Site-Messager#readme",
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2"
+  }
+}
