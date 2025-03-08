@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Бункер</title>
-
+    <title>Чат</title>
 </head>
 <body>
 
+<div id="authPanel">
 <h2>Регистрация</h2>
 <input type="text" id="registerNickname" placeholder="Никнейм" required>
 <input type="password" id="registerPassword" placeholder="Пароль" required>
@@ -17,96 +17,122 @@
 <input type="text" id="loginNickname" placeholder="Никнейм" required>
 <input type="password" id="loginPassword" placeholder="Пароль" required>
 <button onclick="login()">Войти</button>
+</div>
 
+<div id="chatPanel" style="display:none;">
 <h2>Отправка текста</h2>
 <textarea id="textInput" rows="5" cols="50" placeholder="Введите текст здесь"></textarea><br>
 <button onclick="saveText()">Сохранить текст</button>
+<button onclick="logout()">Выйти</button>
 
 <h2>Тексты пользователей</h2>
 <pre id="displayText"></pre>
+</div>
 
 <script>
-let token = '';
-
 async function register() {
-    const nickname = document.getElementById('registerNickname').value;
-    const password = document.getElementById('registerPassword').value;
+   const nickname = document.getElementById('registerNickname').value;
+   const password = document.getElementById('registerPassword').value;
 
-    const response = await fetch('/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nickname, password })
-    });
+   const response = await fetch('/register', {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({ nickname, password })
+   });
 
-    const message = await response.text();
-    alert(message);
+   const message = await response.text();
+   alert(message);
 }
 
 async function login() {
-    const nickname = document.getElementById('loginNickname').value;
-    const password = document.getElementById('loginPassword').value;
+   const nickname = document.getElementById('loginNickname').value;
+   const password = document.getElementById('loginPassword').value;
 
-    const response = await fetch('/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nickname, password })
-    });
+   const response = await fetch('/login', {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({ nickname, password })
+   });
 
-    if (response.ok) {
-        const data = await response.json();
-        token = data.token; // Сохраняем токен
-        alert(`Вы вошли как ${nickname}`);
-        
-        // Очистка полей после входа
-        document.getElementById('loginNickname').value = '';
-        document.getElementById('loginPassword').value = '';
-        
-        // Активируем возможность отправки текста
-        document.getElementById('textInput').disabled = false;
-        
-    } else {
-        const message = await response.text();
-        alert(message);
-    }
+   if (response.ok) {
+       alert(`Вы вошли как ${nickname}`);
+       document.getElementById('authPanel').style.display = 'none'; // Скрываем панель авторизации
+       document.getElementById('chatPanel').style.display = 'block'; // Показываем панель чата
+
+       // Очистка полей после входа
+       document.getElementById('loginNickname').value = '';
+       document.getElementById('loginPassword').value = '';
+   } else {
+       const message = await response.text();
+       alert(message);
+   }
+}
+
+async function logout() {
+   const response = await fetch('/logout', { method: 'POST' });
+
+   if (response.ok) {
+       alert('Вы вышли из аккаунта.');
+       document.getElementById('authPanel').style.display = 'block'; // Показываем панель авторизации
+       document.getElementById('chatPanel').style.display = 'none'; // Скрываем панель чата
+   } else {
+       alert('Ошибка при выходе из аккаунта.');
+   }
 }
 
 async function saveText() {
-    const text = document.getElementById('textInput').value;
+   const text = document.getElementById('textInput').value;
 
-    if (!token) {
-        alert('Сначала выполните вход!');
-        return;
-    }
+   if (!text) {
+       alert('Введите текст перед отправкой!');
+       return;
+   }
 
-     // Отправляем текст на сервер с токеном аутентификации
-     const response = await fetch('/save-text', {
-         method: 'POST',
-         headers: {
-             'Content-Type': 'application/json',
-             'Authorization': `Bearer ${token}`
-         },
-         body: JSON.stringify({ text })
-     });
+   // Отправляем текст на сервер с токеном аутентификации
+   const response = await fetch('/save-text', {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({ text })
+   });
 
-     const message = await response.text();
-     alert(message);
+   const message = await response.text();
+   alert(message);
 }
 
 // Функция для обновления текста на странице
 async function updateDisplayText() {
-    const response = await fetch('/get-text');
+   const response = await fetch('/get-text');
     
-    if (response.ok) {
-        const data = await response.text();
-        document.getElementById('displayText').innerText = data; // Обновляем содержимое
-    } else {
-        console.error('Ошибка при получении текста.');
-    }
+   if (response.ok) {
+       const data = await response.text();
+       document.getElementById('displayText').innerText = data; // Обновляем содержимое
+   } else {
+       console.error('Ошибка при получении текста.');
+   }
 }
 
 // Периодическое обновление текста каждые 5 секунд
 setInterval(updateDisplayText, 5000);
 
+// Проверка состояния входа при загрузке страницы
+window.onload = async function() {
+   try {
+       await updateDisplayText(); // Загружаем тексты пользователей
+
+       // Проверяем наличие токена в cookies и отображаем соответствующие панели
+       const response = await fetch('/get-text'); 
+       
+       if (response.ok) { 
+           document.getElementById('authPanel').style.display = 'none'; 
+           document.getElementById('chatPanel').style.display = 'block'; 
+       } else { 
+           document.getElementById('authPanel').style.display = 'block'; 
+           document.getElementById('chatPanel').style.display = 'none'; 
+       }
+   } catch (error) {
+       console.error("Ошибка при проверке состояния входа:", error);
+   }
+};
 </script>
 
 </body>
