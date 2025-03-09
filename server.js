@@ -262,7 +262,7 @@ app.post('/admin/unblock-user', (req, res) => {
 app.post('/admin/send-message', (req, res) => {
      const { message } = req.body;
 
-     if (!message) {
+     if (!message || message.trim() === '') {
          return res.status(400).send('Сообщение не может быть пустым.');
      }
 
@@ -300,6 +300,16 @@ app.post('/admin/delete-message', (req, res) => {
              res.send("Сообщение удалено.");
          });
      });
+});
+
+// Админский маршрут для очистки чата
+app.post('/admin/clear-chat', (req, res) => {
+    fs.writeFile(TEXT_FILE, '', (err) => { // Очищаем файл чата
+        if (err) {
+            return res.status(500).send('Ошибка при очистке чата.');
+        }
+        res.send('Чат успешно очищен.');
+    });
 });
 
 // Запуск сервера
