@@ -17,9 +17,18 @@
             width: 100%;
             height: 100px;
         }
-        img {
-            max-width: 100%; /* Ограничиваем ширину изображения */
-            height: auto; /* Сохраняем пропорции */
+        button {
+            background-color: #28a745; /* Зеленый цвет фона */
+            color: white; /* Белый цвет текста */
+            border: none; /* Убираем стандартные границы */
+            border-radius: 5px; /* Скругленные края */
+            padding: 10px 20px; /* Отступы внутри кнопки */
+            font-size: 16px; /* Размер шрифта */
+            cursor: pointer; /* Курсор в виде указателя при наведении */
+            transition: background-color 0.3s ease; /* Плавный переход цвета при наведении */
+        }
+        button:hover {
+            background-color: #218838; /* Темно-зеленый цвет при наведении */
         }
     </style>
 </head>
@@ -45,6 +54,13 @@
     <h2>Отправка изображения</h2>
     <input type="file" id="imageInput" accept="image/*"><br>
     <button onclick="uploadImage()">Отправить изображение</button>
+
+    <h2>Отправка сообщения от имени сервера</h2>
+    <textarea id="serverMessageInput" placeholder="Введите сообщение от сервера"></textarea><br>
+    <button onclick="sendServerMessage()">Отправить сообщение от сервера</button>
+
+    <h3>Очистка чата</h3>
+    <button onclick="clearChat()">Очистить чат</button>
 
     <button onclick="logout()">Выйти</button>
 
@@ -97,37 +113,37 @@ async function login() {
 
 // Выход из аккаунта
 async function logout() {
-    const response = await fetch('/logout', { method: 'POST' });
+   const response = await fetch('/logout', { method: 'POST' });
 
-    if (response.ok) {
-        alert('Вы вышли из аккаунта.');
-        document.getElementById('authPanel').style.display = 'block'; // Показываем панель авторизации
-        document.getElementById('chatPanel').style.display = 'none'; // Скрываем панель чата
-    } else {
-        alert('Ошибка при выходе из аккаунта.');
-    }
+   if (response.ok) {
+       alert('Вы вышли из аккаунта.');
+       document.getElementById('authPanel').style.display = 'block'; // Показываем панель авторизации
+       document.getElementById('chatPanel').style.display = 'none'; // Скрываем панель чата
+   } else {
+       alert('Ошибка при выходе из аккаунта.');
+   }
 }
 
 // Сохранение текстового сообщения
 async function saveText() {
-    const text = document.getElementById('textInput').value;
+   const text = document.getElementById('textInput').value;
 
-    if (!text) {
-        alert('Введите текст перед отправкой!');
-        return;
-    }
+   if (!text) {
+       alert('Введите текст перед отправкой!');
+       return;
+   }
 
-    // Отправляем текст на сервер
-    const response = await fetch('/save-text', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text })
-    });
+   // Отправляем текст на сервер
+   const response = await fetch('/save-text', {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({ text })
+   });
 
-    const message = await response.text();
-    alert(message);
-    
-    updateChat(); // Обновляем чат после отправки текста
+   const message = await response.text();
+   alert(message);
+   
+   updateChat(); // Обновляем чат после отправки текста
 }
 
 // Загрузка изображения
@@ -152,6 +168,38 @@ async function uploadImage() {
    alert(message);
 
    updateChat(); // Обновляем чат после отправки изображения
+}
+
+// Отправка сообщения от имени сервера
+async function sendServerMessage() {
+   const messageInputValue= document.getElementById('serverMessageInput').value;
+
+	if (!messageInputValue.trim()) { 
+		alert("Введите сообщение перед отправкой!"); 
+		return; 
+	}
+
+	const response= await fetch("/admin/send-message", { 
+		method: "POST", 
+		headers: { "Content-Type": "application/json" }, 
+		body: JSON.stringify({ message: messageInputValue }) 
+	});
+
+	const result= await response.text(); 
+	alert(result);
+
+	// Очистка поля ввода после отправки сообщения 
+	document.getElementById("serverMessageInput").value= ""; 
+}
+
+// Очистка чата
+async function clearChat() {
+   const response = await fetch('/admin/clear-chat', {
+       method: 'POST'
+   });
+
+   const message = await response.text();
+   alert(message);
 }
 
 // Функция для обновления текста на странице
