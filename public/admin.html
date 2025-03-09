@@ -7,51 +7,76 @@
 </head>
 <body>
 
-<h2>Админ Панель</h2>
+<h2>Вход в админ панель</h2>
+<input type="password" id="adminPassword" placeholder="Введите пароль">
+<button onclick="adminLogin()">Войти</button>
 
-<h3>Список пользователей</h3>
-<ul id="userList"></ul>
+<div id="adminPanel" style="display:none;">
+    <h2>Админ Панель</h2>
 
-<h3>Блокировка пользователя</h3>
-<input type="text" id="blockNickname" placeholder="Никнейм">
-<button onclick="blockUser()">Заблокировать</button>
+    <h3>Список пользователей</h3>
+    <ul id="userList"></ul>
 
-<h3>Удаление сообщения</h3>
-<input type="number" id="messageIndex" placeholder="Индекс сообщения">
-<button onclick="deleteMessage()">Удалить сообщение</button>
+    <h3>Блокировка пользователя</h3>
+    <input type="text" id="blockNickname" placeholder="Никнейм">
+    <button onclick="blockUser()">Заблокировать</button>
+
+    <h3>Удаление сообщения</h3>
+    <input type="number" id="messageIndex" placeholder="Индекс сообщения">
+    <button onclick="deleteMessage()">Удалить сообщение</button>
+</div>
 
 <script>
+// Вход в админ панель
+async function adminLogin() {
+     const password = document.getElementById("adminPassword").value;
+
+     const response = await fetch('/admin/login', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ password })
+     });
+
+     if(response.ok){
+         alert("Вы вошли в админ панель.");
+         document.getElementById("adminPanel").style.display ="block"; // Показываем панель администратора
+         fetchUsers(); // Загружаем список пользователей после входа в панель администратора
+     } else{
+         alert("Неверный пароль.");
+     }
+}
+
 // Получение списка пользователей
 async function fetchUsers() {
-    const response = await fetch('/admin/users');
-    
-    if(response.ok){
-        const users = await response.json();
-        const userListElement = document.getElementById("userList");
-        
-        userListElement.innerHTML = ""; // Очищаем список
-        
-        users.forEach(user => {
-            const liElement = document.createElement("li");
-            liElement.textContent = `${user.nickname} - ${user.blocked ? "Заблокирован" : "Активен"}`;
-            userListElement.appendChild(liElement);
-        });
-        
-    } else{
-        console.error("Ошибка при получении списка пользователей.");
-        alert("Не удалось загрузить список пользователей.");
-    }
+     const response = await fetch('/admin/users');
+
+     if(response.ok){
+         const users = await response.json();
+         const userListElement = document.getElementById("userList");
+
+         userListElement.innerHTML = ""; // Очищаем список
+
+         users.forEach(user => {
+             const liElement = document.createElement("li");
+             liElement.textContent = `${user.nickname} - ${user.blocked ? "Заблокирован" : "Активен"}`;
+             userListElement.appendChild(liElement);
+         });
+
+     } else{
+         console.error("Ошибка при получении списка пользователей.");
+         alert("Не удалось загрузить список пользователей.");
+     }
 }
 
 // Блокировка пользователя
 async function blockUser() {
-    const nickname = document.getElementById("blockNickname").value;
+     const nickname = document.getElementById("blockNickname").value;
 
-    const response = await fetch('/admin/block-user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nickname })
-    });
+     const response = await fetch('/admin/block-user', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ nickname })
+     });
 
      const message = await response.text();
      alert(message);
@@ -73,7 +98,7 @@ async function deleteMessage() {
 }
 
 // Загружаем список пользователей при загрузке страницы
-window.onload = fetchUsers;
+window.onload = function() {};
 </script>
 
 </body>
