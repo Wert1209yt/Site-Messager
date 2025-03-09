@@ -32,6 +32,9 @@
     <h3>Отправка сообщения от имени сервера</h3>
     <textarea id="serverMessageInput" placeholder="Введите сообщение"></textarea><br>
     <button onclick="sendServerMessage()">Отправить сообщение</button>
+
+    <h3>Очистка чата</h3>
+    <button onclick="clearChat()">Очистить чат</button>
 </div>
 
 <script>
@@ -140,6 +143,16 @@ async function sendServerMessage() {
 
 	// Очистка поля ввода после отправки сообщения 
 	document.getElementById("serverMessageInput").value= ""; 
+}
+
+// Очистка чата
+async function clearChat() {
+   const response = await fetch('/admin/clear-chat', {
+       method: 'POST'
+   });
+
+   const message = await response.text();
+   alert(message);
 }
 
 // Загружаем список пользователей при загрузке страницы 
