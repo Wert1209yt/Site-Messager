@@ -13,10 +13,10 @@ const TEXT_FILE = './shared_text.txt';
 const SECRET_KEY = 'YOUR_SECRET_KEY'; // Замените на свой секретный ключ
 const ADMIN_PASSWORD = '1425@#$nj)'; // Установленный пароль для админ-панели
 
-// Настройка multer для загрузки изображений
+// Настройка multer для загрузки изображений и голосовых сообщений
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, 'uploads/'); // Папка для хранения загруженных изображений
+        cb(null, 'uploads/'); // Папка для хранения загруженных файлов
     },
     filename: function (req, file, cb) {
         cb(null, Date.now() + '-' + file.originalname); // Уникальное имя файла
@@ -190,6 +190,44 @@ app.post('/upload-image', upload.single('image'), (req, res) => {
    }
 });
 
+// Обработка загрузки голосового сообщения
+app.post('/upload-voice', upload.single('voice'), (req, res) => {
+   const token = req.cookies.token;
+
+   if (!token) {
+       return res.status(401).send('Необходима аутентификация.');
+   }
+
+   try {
+       const decoded = jwt.verify(token, SECRET_KEY);
+       const nickname = decoded.nickname;
+
+       let users = readUsers();
+       const user = users.find(user => user.nickname === nickname);
+
+       // Проверка блокировки пользователя
+       if (user.blocked) {
+           return res.status(403).send('Ваш аккаунт заблокирован.');
+       }
+
+       if (!req.file) {
+           return res.status(400).send('Файл не загружен.');
+       }
+
+       const voiceMessage = `${nickname} отправил голосовое сообщение: <audio controls src="/uploads/${req.file.filename}"></audio>\n`;
+       
+       fs.appendFile(TEXT_FILE, voiceMessage, (err) => {
+           if (err) {
+               return res.status(500).send('Ошибка при сохранении информации о голосовом сообщении.');
+           }
+           res.send(`Голосовое сообщение успешно загружено.`);
+       });
+
+   } catch (error) {
+       return res.status(401).send('Токен недействителен.');
+   }
+});
+
 // Получение текста и изображений
 app.get('/get-text', (req, res) => {
    fs.readFile(TEXT_FILE, 'utf8', (err, data) => {
@@ -258,26 +296,6 @@ app.post('/admin/unblock-user', (req, res) => {
    res.send(`Пользователь ${nickname} разблокирован.`);
 });
 
-// Админский маршрут для отправки сообщения от имени сервера
-app.post('/admin/send-message', (req, res) => {
-     const { message } = req.body;
-
-     if (!message || message.trim() === '') {
-         return res.status(400).send('Сообщение не может быть пустым.');
-     }
-
-     // Форматируем сообщение от имени сервера
-     const serverMessage = `Сервер > ${message}\n`;
-
-     // Сохраняем сообщение в файл
-     fs.appendFile(TEXT_FILE, serverMessage, (err) => {
-         if (err) {
-             return res.status(500).send('Ошибка при сохранении сообщения.');
-         }
-         res.send('Сообщение от сервера успешно отправлено.');
-     });
-});
-
 // Админский маршрут для удаления сообщения по индексу
 app.post('/admin/delete-message', (req, res) => {
      const { index } = req.body; // Индекс сообщения
@@ -304,12 +322,12 @@ app.post('/admin/delete-message', (req, res) => {
 
 // Админский маршрут для очистки чата
 app.post('/admin/clear-chat', (req, res) => {
-    fs.writeFile(TEXT_FILE, '', (err) => { // Очищаем файл чата
-        if (err) {
-            return res.status(500).send('Ошибка при очистке чата.');
-        }
-        res.send('Чат успешно очищен.');
-    });
+     fs.writeFile(TEXT_FILE, '', (err) => { // Очищаем файл чата
+         if (err) {
+             return res.status(500).send('Ошибка при очистке чата.');
+         }
+         res.send('Чат успешно очищен.');
+     });
 });
 
 // Запуск сервера
