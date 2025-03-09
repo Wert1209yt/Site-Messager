@@ -10,15 +10,16 @@ const app = express();
 const PORT = 3000;
 const USERS_FILE = './users.json';
 const TEXT_FILE = './shared_text.txt';
-const SECRET_KEY = 'YOUR_SECRET_KEY';
+const SECRET_KEY = 'YOUR_SECRET_KEY'; // Замените на свой секретный ключ
+const ADMIN_PASSWORD = '1425@#$nj)'; // Установленный пароль для админ-панели
 
 // Настройка multer для загрузки изображений
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, 'uploads/');
+        cb(null, 'uploads/'); // Папка для хранения загруженных изображений
     },
     filename: function (req, file, cb) {
-        cb(null, Date.now() + '-' + file.originalname);
+        cb(null, Date.now() + '-' + file.originalname); // Уникальное имя файла
     }
 });
 
@@ -61,7 +62,7 @@ app.post('/register', (req, res) => {
     const hashedPassword = bcrypt.hashSync(password, 10);
 
     // Добавление нового пользователя
-    users.push({ nickname, password: hashedPassword, blocked: false }); // Добавлено поле blocked
+    users.push({ nickname, password: hashedPassword, blocked: false });
     writeUsers(users);
 
     const joinMessage = `${nickname} присоединился\n`;
@@ -109,14 +110,14 @@ app.post('/login', (req, res) => {
 
 // Выход из аккаунта
 app.post('/logout', (req, res) => {
-    res.clearCookie('token');
+    res.clearCookie('token'); // Удаляем cookie с токеном
     res.send('Вы вышли из аккаунта.');
 });
 
 // Обработка POST-запроса для сохранения текста
 app.post('/save-text', (req, res) => {
    const { text } = req.body;
-   const token = req.cookies.token;
+   const token = req.cookies.token; // Получаем токен из cookies
 
    if (!token) {
        return res.status(401).send('Необходима аутентификация.');
@@ -195,6 +196,18 @@ app.get('/get-text', (req, res) => {
        if (err) return res.status(500).send('Ошибка при чтении файла.');
        res.send(data);
    });
+});
+
+// Проверка пароля для доступа к админ-панели
+app.post('/admin/login', (req, res) => {
+   const { password } = req.body;
+
+   if (!password || password !== ADMIN_PASSWORD) { 
+      return res.status(403).send("Неверный пароль.");
+   }
+
+   // Если пароль верный - возвращаем сообщение об успешном входе в админ-панель
+   res.send("Вы успешно вошли в админ-панель.");
 });
 
 // Админский маршрут для получения всех пользователей
