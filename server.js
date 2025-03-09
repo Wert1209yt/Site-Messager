@@ -241,6 +241,23 @@ app.post('/admin/block-user', (req, res) => {
    res.send(`Пользователь ${nickname} заблокирован.`);
 });
 
+// Админский маршрут для разблокировки пользователя
+app.post('/admin/unblock-user', (req, res) => {
+   const { nickname } = req.body;
+
+   let users = readUsers();
+   const userIndex = users.findIndex(user => user.nickname === nickname);
+
+   if (userIndex === -1) {
+       return res.status(404).send('Пользователь не найден.');
+   }
+
+   users[userIndex].blocked = false; // Разблокируем пользователя
+   writeUsers(users);
+
+   res.send(`Пользователь ${nickname} разблокирован.`);
+});
+
 // Админский маршрут для удаления сообщения по индексу
 app.post('/admin/delete-message', (req, res) => {
    const { index } = req.body; // Индекс сообщения
