@@ -28,6 +28,10 @@
     <h3>Удаление сообщения</h3>
     <input type="number" id="messageIndex" placeholder="Индекс сообщения">
     <button onclick="deleteMessage()">Удалить сообщение</button>
+
+    <h3>Отправка сообщения от имени сервера</h3>
+    <textarea id="serverMessageInput" placeholder="Введите сообщение"></textarea><br>
+    <button onclick="sendServerMessage()">Отправить сообщение</button>
 </div>
 
 <script>
@@ -116,8 +120,30 @@ async function deleteMessage() {
      alert(message);
 }
 
-// Загружаем список пользователей при загрузке страницы
-window.onload = function() {};
+// Отправка сообщения от имени сервера
+async function sendServerMessage() {
+    const messageInputValue= document.getElementById('serverMessageInput').value;
+
+	if (!messageInputValue.trim()) { 
+		alert("Введите сообщение перед отправкой!"); 
+		return; 
+	}
+
+	const response= await fetch("/admin/send-message", { 
+		method: "POST", 
+		headers: { "Content-Type": "application/json" }, 
+		body: JSON.stringify({ message: messageInputValue }) 
+	});
+
+	const result= await response.text(); 
+	alert(result);
+
+	// Очистка поля ввода после отправки сообщения 
+	document.getElementById("serverMessageInput").value= ""; 
+}
+
+// Загружаем список пользователей при загрузке страницы 
+window.onload= function() {};
 </script>
 
 </body>
