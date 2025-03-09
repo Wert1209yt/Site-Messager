@@ -296,6 +296,26 @@ app.post('/admin/unblock-user', (req, res) => {
    res.send(`Пользователь ${nickname} разблокирован.`);
 });
 
+// Админский маршрут для отправки сообщения от имени сервера
+ app.post('/admin/send-message', (req, res) => {
+      const { message } = req.body;
+ 
+      if (!message || message.trim() === '') {
+          return res.status(400).send('Сообщение не может быть пустым.');
+      }
+ 
+      // Форматируем сообщение от имени сервера
+      const serverMessage = `Сервер > ${message}\n`;
+ 
+      // Сохраняем сообщение в файл
+      fs.appendFile(TEXT_FILE, serverMessage, (err) => {
+          if (err) {
+              return res.status(500).send('Ошибка при сохранении сообщения.');
+          }
+          res.send('Сообщение от сервера успешно отправлено.');
+      });
+ });
+
 // Админский маршрут для удаления сообщения по индексу
 app.post('/admin/delete-message', (req, res) => {
      const { index } = req.body; // Индекс сообщения
