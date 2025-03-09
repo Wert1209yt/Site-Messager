@@ -18,6 +18,6 @@ npm install
 ```
 И чтобы запустить сервер:
 ```
-npm start
+node server.js
 ```
 Сервер запускается на localhost:3000!
