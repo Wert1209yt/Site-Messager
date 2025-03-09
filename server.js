@@ -258,28 +258,48 @@ app.post('/admin/unblock-user', (req, res) => {
    res.send(`Пользователь ${nickname} разблокирован.`);
 });
 
+// Админский маршрут для отправки сообщения от имени сервера
+app.post('/admin/send-message', (req, res) => {
+     const { message } = req.body;
+
+     if (!message) {
+         return res.status(400).send('Сообщение не может быть пустым.');
+     }
+
+     // Форматируем сообщение от имени сервера
+     const serverMessage = `Сервер > ${message}\n`;
+
+     // Сохраняем сообщение в файл
+     fs.appendFile(TEXT_FILE, serverMessage, (err) => {
+         if (err) {
+             return res.status(500).send('Ошибка при сохранении сообщения.');
+         }
+         res.send('Сообщение от сервера успешно отправлено.');
+     });
+});
+
 // Админский маршрут для удаления сообщения по индексу
 app.post('/admin/delete-message', (req, res) => {
-   const { index } = req.body; // Индекс сообщения
+     const { index } = req.body; // Индекс сообщения
 
-   fs.readFile(TEXT_FILE, 'utf8', (err, data) => {
-      if (err) return res.status(500).send('Ошибка при чтении файла.');
+     fs.readFile(TEXT_FILE, 'utf8', (err, data) => {
+         if (err) return res.status(500).send('Ошибка при чтении файла.');
 
-      let messagesArray = data.split('\n').filter(line => line); // Разделяем на массив сообщений
+         let messagesArray = data.split('\n').filter(line => line); // Разделяем на массив сообщений
 
-      if(index < 0 || index >= messagesArray.length){
-          return res.status(404).send("Сообщение не найдено.");
-      }
+         if(index < 0 || index >= messagesArray.length){
+             return res.status(404).send("Сообщение не найдено.");
+         }
 
-      messagesArray.splice(index, 1); // Удаляем сообщение по индексу
+         messagesArray.splice(index, 1); // Удаляем сообщение по индексу
 
-      fs.writeFile(TEXT_FILE, messagesArray.join('\n') + '\n', err => { 
-          if(err){
-              return res.status(500).send("Ошибка при удалении сообщения.");
-          }
-          res.send("Сообщение удалено.");
-      });
-   });
+         fs.writeFile(TEXT_FILE, messagesArray.join('\n') + '\n', err => { 
+             if(err){
+                 return res.status(500).send("Ошибка при удалении сообщения.");
+             }
+             res.send("Сообщение удалено.");
+         });
+     });
 });
 
 // Запуск сервера
