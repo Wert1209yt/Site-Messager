@@ -21,6 +21,10 @@
     <input type="text" id="blockNickname" placeholder="Никнейм">
     <button onclick="blockUser()">Заблокировать</button>
 
+    <h3>Разблокировка пользователя</h3>
+    <input type="text" id="unblockNickname" placeholder="Никнейм">
+    <button onclick="unblockUser()">Разблокировать</button>
+
     <h3>Удаление сообщения</h3>
     <input type="number" id="messageIndex" placeholder="Индекс сообщения">
     <button onclick="deleteMessage()">Удалить сообщение</button>
@@ -81,6 +85,21 @@ async function blockUser() {
      const message = await response.text();
      alert(message);
      fetchUsers(); // Обновляем список пользователей после блокировки
+}
+
+// Разблокировка пользователя
+async function unblockUser() {
+     const nickname = document.getElementById("unblockNickname").value;
+
+     const response = await fetch('/admin/unblock-user', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ nickname })
+     });
+
+     const message = await response.text();
+     alert(message);
+     fetchUsers(); // Обновляем список пользователей после разблокировки
 }
 
 // Удаление сообщения по индексу
