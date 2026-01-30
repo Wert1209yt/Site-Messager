@@ -9,346 +9,187 @@ const multer = require('multer');
 const app = express();
 const PORT = 3000;
 const USERS_FILE = './users.json';
-const TEXT_FILE = './shared_text.txt';
+const CHATS_FILE = './chats.json';
 const SECRET_KEY = 'YOUR_SECRET_KEY'; // Замените на свой секретный ключ
-const ADMIN_PASSWORD = '1425@#$nj)'; // Установленный пароль для админ-панели
+const ADMIN_PASSWORD = '1425@#$nj)'; 
 
-// Настройка multer для загрузки изображений и голосовых сообщений
+// Multer для загрузки файлов
 const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'uploads/'); // Папка для хранения загруженных файлов
-    },
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + '-' + file.originalname); // Уникальное имя файла
-    }
+    destination: (req, file, cb) => cb(null, 'uploads/'),
+    filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
 });
-
-const upload = multer({ storage: storage });
+const upload = multer({ storage });
 
 app.use(bodyParser.json());
 app.use(express.static('public'));
 app.use(cookieParser());
 app.use('/uploads', express.static('uploads'));
 
-// Функция для чтения пользователей из файла
-function readUsers() {
-    if (!fs.existsSync(USERS_FILE)) {
-        fs.writeFileSync(USERS_FILE, JSON.stringify([]));
-    }
-    return JSON.parse(fs.readFileSync(USERS_FILE));
+// --- Работа с файлами ---
+function readJSON(file) {
+    if (!fs.existsSync(file)) fs.writeFileSync(file, JSON.stringify([]));
+    return JSON.parse(fs.readFileSync(file));
+}
+function writeJSON(file, data) {
+    fs.writeFileSync(file, JSON.stringify(data, null, 2));
 }
 
-// Функция для записи пользователей в файл
-function writeUsers(users) {
-    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-}
+// --- Пользователи ---
+function readUsers() { return readJSON(USERS_FILE); }
+function writeUsers(users) { writeJSON(USERS_FILE, users); }
 
-// Регистрация пользователя
+// --- Чаты ---
+function readChats() { return readJSON(CHATS_FILE); }
+function writeChats(chats) { writeJSON(CHATS_FILE, chats); }
+
+// --- Регистрация ---
 app.post('/register', (req, res) => {
     const { nickname, password } = req.body;
+    if (!nickname || !password) return res.status(400).send('Никнейм и пароль обязательны.');
 
-    if (!nickname || !password) {
-        return res.status(400).send('Никнейм и пароль обязательны.');
-    }
+    const users = readUsers();
+    if (users.find(u => u.nickname === nickname)) return res.status(400).send('Никнейм уже занят.');
 
-    let users = readUsers();
-
-    // Проверка на уникальность ника
-    if (users.find(user => user.nickname === nickname)) {
-        return res.status(400).send('Никнейм уже занят.');
-    }
-
-    // Хеширование пароля
-    const hashedPassword = bcrypt.hashSync(password, 10);
-
-    // Добавление нового пользователя
-    users.push({ nickname, password: hashedPassword, blocked: false });
+    users.push({ nickname, password: bcrypt.hashSync(password, 10), blocked: false });
     writeUsers(users);
-
-    const joinMessage = `${nickname} присоединился\n`;
-    fs.appendFile(TEXT_FILE, joinMessage, (err) => {
-        if (err) {
-            console.error('Ошибка при записи в файл:', err);
-        }
-    });
-
     res.status(201).send('Пользователь зарегистрирован.');
 });
 
-// Вход в аккаунт
+// --- Логин ---
 app.post('/login', (req, res) => {
     const { nickname, password } = req.body;
-
-    if (!nickname || !password) {
-        return res.status(400).send('Никнейм и пароль обязательны.');
+    const users = readUsers();
+    const user = users.find(u => u.nickname === nickname);
+    if (!user || user.blocked || !bcrypt.compareSync(password, user.password)) {
+        return res.status(400).send('Неверный никнейм или пароль или аккаунт заблокирован.');
     }
-
-    let users = readUsers();
-
-    // Поиск пользователя по нику
-    const user = users.find(user => user.nickname === nickname);
-    
-    // Проверка блокировки пользователя
-    if (user && user.blocked) {
-        return res.status(403).send('Ваш аккаунт заблокирован.');
-    }
-
-    if (!user) {
-        return res.status(400).send('Неверный никнейм или пароль.');
-    }
-
-    const isMatch = bcrypt.compareSync(password, user.password);
-    if (!isMatch) {
-        return res.status(400).send('Неверный никнейм или пароль.');
-    }
-
-    const token = jwt.sign({ nickname: user.nickname }, SECRET_KEY, { expiresIn: '1h' });
-    
+    const token = jwt.sign({ nickname }, SECRET_KEY, { expiresIn: '1h' });
     res.cookie('token', token, { httpOnly: true });
-    res.json({ message: 'Вход выполнен успешно!' });
+    res.send('Вход выполнен успешно!');
 });
 
-// Выход из аккаунта
 app.post('/logout', (req, res) => {
-    res.clearCookie('token'); // Удаляем cookie с токеном
+    res.clearCookie('token');
     res.send('Вы вышли из аккаунта.');
 });
 
-// Обработка POST-запроса для сохранения текста
-app.post('/save-text', (req, res) => {
-   const { text } = req.body;
-   const token = req.cookies.token; // Получаем токен из cookies
+// --- Middleware для аутентификации ---
+function auth(req, res, next) {
+    const token = req.cookies.token;
+    if (!token) return res.status(401).send('Необходима аутентификация.');
+    try {
+        req.user = jwt.verify(token, SECRET_KEY);
+        const users = readUsers();
+        const u = users.find(x => x.nickname === req.user.nickname);
+        if (!u || u.blocked) return res.status(403).send('Аккаунт заблокирован.');
+        next();
+    } catch {
+        return res.status(401).send('Токен недействителен.');
+    }
+}
 
-   if (!token) {
-       return res.status(401).send('Необходима аутентификация.');
-   }
+// --- Создать чат ---
+app.post('/chat/create', auth, (req, res) => {
+    const { name, members } = req.body;
+    if (!name || !Array.isArray(members)) return res.status(400).send('Название и участники обязательны.');
 
-   try {
-       const decoded = jwt.verify(token, SECRET_KEY);
-       const nickname = decoded.nickname;
-
-       let users = readUsers();
-       const user = users.find(user => user.nickname === nickname);
-
-       // Проверка блокировки пользователя
-       if (user.blocked) {
-           return res.status(403).send('Ваш аккаунт заблокирован.');
-       }
-
-       if (!text) {
-           return res.status(400).send('Текст не может быть пустым.');
-       }
-
-       const formattedText = `${nickname} > ${text}\n`;
-       fs.appendFile(TEXT_FILE, formattedText, (err) => {
-           if (err) {
-               return res.status(500).send('Ошибка при сохранении текста.');
-           }
-           res.send('Текст успешно добавлен!');
-       });
-
-   } catch (error) {
-       return res.status(401).send('Токен недействителен.');
-   }
+    const chats = readChats();
+    const chat = {
+        id: Date.now(),
+        name,
+        owner: req.user.nickname,
+        members: [...new Set([req.user.nickname, ...members])],
+        messages: []
+    };
+    chats.push(chat);
+    writeChats(chats);
+    res.status(201).json(chat);
 });
 
-// Обработка загрузки изображения
-app.post('/upload-image', upload.single('image'), (req, res) => {
-   const token = req.cookies.token;
-
-   if (!token) {
-       return res.status(401).send('Необходима аутентификация.');
-   }
-
-   try {
-       const decoded = jwt.verify(token, SECRET_KEY);
-       const nickname = decoded.nickname;
-
-       let users = readUsers();
-       const user = users.find(user => user.nickname === nickname);
-
-       // Проверка блокировки пользователя
-       if (user.blocked) {
-           return res.status(403).send('Ваш аккаунт заблокирован.');
-       }
-
-       if (!req.file) {
-           return res.status(400).send('Файл не загружен.');
-       }
-
-       const imageMessage = `${nickname} отправил изображение: <img src="/uploads/${req.file.filename}" alt="Image">\n`;
-       
-       fs.appendFile(TEXT_FILE, imageMessage, (err) => {
-           if (err) {
-               return res.status(500).send('Ошибка при сохранении информации об изображении.');
-           }
-           res.send(`Изображение успешно загружено.`);
-       });
-
-   } catch (error) {
-       return res.status(401).send('Токен недействителен.');
-   }
+// --- Присоединиться к чату ---
+app.post('/chat/join', auth, (req, res) => {
+    const { chatId } = req.body;
+    const chats = readChats();
+    const chat = chats.find(c => c.id == chatId);
+    if (!chat) return res.status(404).send('Чат не найден.');
+    if (!chat.members.includes(req.user.nickname)) chat.members.push(req.user.nickname);
+    writeChats(chats);
+    res.send(`Вы присоединились к чату ${chat.name}`);
 });
 
-// Обработка загрузки голосового сообщения
-app.post('/upload-voice', upload.single('voice'), (req, res) => {
-   const token = req.cookies.token;
-
-   if (!token) {
-       return res.status(401).send('Необходима аутентификация.');
-   }
-
-   try {
-       const decoded = jwt.verify(token, SECRET_KEY);
-       const nickname = decoded.nickname;
-
-       let users = readUsers();
-       const user = users.find(user => user.nickname === nickname);
-
-       // Проверка блокировки пользователя
-       if (user.blocked) {
-           return res.status(403).send('Ваш аккаунт заблокирован.');
-       }
-
-       if (!req.file) {
-           return res.status(400).send('Файл не загружен.');
-       }
-
-       const voiceMessage = `${nickname} отправил голосовое сообщение: <audio controls src="/uploads/${req.file.filename}"></audio>\n`;
-       
-       fs.appendFile(TEXT_FILE, voiceMessage, (err) => {
-           if (err) {
-               return res.status(500).send('Ошибка при сохранении информации о голосовом сообщении.');
-           }
-           res.send(`Голосовое сообщение успешно загружено.`);
-       });
-
-   } catch (error) {
-       return res.status(401).send('Токен недействителен.');
-   }
+// --- Получить чаты пользователя ---
+app.get('/chats', auth, (req, res) => {
+    const chats = readChats();
+    res.json(chats.filter(c => c.members.includes(req.user.nickname)));
 });
 
-// Получение текста и изображений
-app.get('/get-text', (req, res) => {
-   fs.readFile(TEXT_FILE, 'utf8', (err, data) => {
-       if (err) return res.status(500).send('Ошибка при чтении файла.');
-       res.send(data);
-   });
+// --- Отправка сообщений в чат ---
+app.post('/chat/:chatId/message', auth, upload.single('file'), (req, res) => {
+    const chatId = parseInt(req.params.chatId);
+    const { text } = req.body;
+    const chats = readChats();
+    const chat = chats.find(c => c.id === chatId);
+    if (!chat) return res.status(404).send('Чат не найден.');
+    if (!chat.members.includes(req.user.nickname)) return res.status(403).send('Вы не участник чата.');
+
+    let message = { author: req.user.nickname, timestamp: Date.now() };
+
+    if (text) message.type = 'text', message.content = text;
+    else if (req.file) {
+        message.type = req.file.mimetype.startsWith('image') ? 'image' : 'voice';
+        message.content = `/uploads/${req.file.filename}`;
+    } else return res.status(400).send('Сообщение пустое.');
+
+    chat.messages.push(message);
+    writeChats(chats);
+    res.json(message);
 });
 
-// Проверка пароля для доступа к админ-панели
+// --- Получение сообщений ---
+app.get('/chat/:chatId/messages', auth, (req, res) => {
+    const chatId = parseInt(req.params.chatId);
+    const chats = readChats();
+    const chat = chats.find(c => c.id === chatId);
+    if (!chat) return res.status(404).send('Чат не найден.');
+    if (!chat.members.includes(req.user.nickname)) return res.status(403).send('Вы не участник чата.');
+    res.json(chat.messages);
+});
+
+// --- Кикнуть участника (только автор) ---
+app.post('/chat/:chatId/kick', auth, (req, res) => {
+    const chatId = parseInt(req.params.chatId);
+    const { member } = req.body;
+    const chats = readChats();
+    const chat = chats.find(c => c.id === chatId);
+    if (!chat) return res.status(404).send('Чат не найден.');
+    if (chat.owner !== req.user.nickname) return res.status(403).send('Вы не автор чата.');
+
+    chat.members = chat.members.filter(m => m !== member);
+    writeChats(chats);
+    res.send(`Пользователь ${member} исключён из чата.`);
+});
+
+// --- Админ ---
 app.post('/admin/login', (req, res) => {
-   const { password } = req.body;
-
-   if (!password || password !== ADMIN_PASSWORD) { 
-      return res.status(403).send("Неверный пароль.");
-   }
-
-   // Если пароль верный - возвращаем сообщение об успешном входе в админ-панель
-   res.send("Вы успешно вошли в админ-панель.");
+    const { password } = req.body;
+    if (password !== ADMIN_PASSWORD) return res.status(403).send('Неверный пароль.');
+    res.send('Вы вошли в админ-панель.');
 });
 
-// Админский маршрут для получения всех пользователей
-app.get('/admin/users', (req, res) => {
-   const users = readUsers();
-   res.json(users); // Возвращаем список пользователей в формате JSON
+// --- Админ: управление чатами ---
+app.get('/admin/chats', (req, res) => {
+    const chats = readChats();
+    res.json(chats);
 });
 
-// Админский маршрут для блокировки пользователя
-app.post('/admin/block-user', (req, res) => {
-   const { nickname } = req.body;
-
-   let users = readUsers();
-   const userIndex = users.findIndex(user => user.nickname === nickname);
-
-   if (userIndex === -1) {
-       return res.status(404).send('Пользователь не найден.');
-   }
-
-   users[userIndex].blocked = true; // Блокируем пользователя
-   writeUsers(users);
-   
-   // Удаляем все сообщения пользователя из файла shared_text.txt
-   fs.readFile(TEXT_FILE, 'utf8', (err, data) => {
-      if (!err && data.includes(nickname)) {
-          const updatedData = data.split('\n').filter(line => !line.startsWith(nickname)).join('\n');
-          fs.writeFile(TEXT_FILE, updatedData + '\n', err => {});
-      }
-   });
-
-   res.send(`Пользователь ${nickname} заблокирован.`);
+app.post('/admin/kick', (req, res) => {
+    const { chatId, member } = req.body;
+    const chats = readChats();
+    const chat = chats.find(c => c.id == chatId);
+    if (!chat) return res.status(404).send('Чат не найден.');
+    chat.members = chat.members.filter(m => m !== member);
+    writeChats(chats);
+    res.send(`Админ исключил ${member} из чата ${chat.name}`);
 });
 
-// Админский маршрут для разблокировки пользователя
-app.post('/admin/unblock-user', (req, res) => {
-   const { nickname } = req.body;
-
-   let users = readUsers();
-   const userIndex = users.findIndex(user => user.nickname === nickname);
-
-   if (userIndex === -1) {
-       return res.status(404).send('Пользователь не найден.');
-   }
-
-   users[userIndex].blocked = false; // Разблокируем пользователя
-   writeUsers(users);
-
-   res.send(`Пользователь ${nickname} разблокирован.`);
-});
-
-// Админский маршрут для отправки сообщения от имени сервера
- app.post('/admin/send-message', (req, res) => {
-      const { message } = req.body;
- 
-      if (!message || message.trim() === '') {
-          return res.status(400).send('Сообщение не может быть пустым.');
-      }
- 
-      // Форматируем сообщение от имени сервера
-      const serverMessage = `Сервер > ${message}\n`;
- 
-      // Сохраняем сообщение в файл
-      fs.appendFile(TEXT_FILE, serverMessage, (err) => {
-          if (err) {
-              return res.status(500).send('Ошибка при сохранении сообщения.');
-          }
-          res.send('Сообщение от сервера успешно отправлено.');
-      });
- });
-
-// Админский маршрут для удаления сообщения по индексу
-app.post('/admin/delete-message', (req, res) => {
-     const { index } = req.body; // Индекс сообщения
-
-     fs.readFile(TEXT_FILE, 'utf8', (err, data) => {
-         if (err) return res.status(500).send('Ошибка при чтении файла.');
-
-         let messagesArray = data.split('\n').filter(line => line); // Разделяем на массив сообщений
-
-         if(index < 0 || index >= messagesArray.length){
-             return res.status(404).send("Сообщение не найдено.");
-         }
-
-         messagesArray.splice(index, 1); // Удаляем сообщение по индексу
-
-         fs.writeFile(TEXT_FILE, messagesArray.join('\n') + '\n', err => { 
-             if(err){
-                 return res.status(500).send("Ошибка при удалении сообщения.");
-             }
-             res.send("Сообщение удалено.");
-         });
-     });
-});
-
-// Админский маршрут для очистки чата
-app.post('/admin/clear-chat', (req, res) => {
-     fs.writeFile(TEXT_FILE, '', (err) => { // Очищаем файл чата
-         if (err) {
-             return res.status(500).send('Ошибка при очистке чата.');
-         }
-         res.send('Чат успешно очищен.');
-     });
-});
-
-// Запуск сервера
 app.listen(PORT, () => console.log(`Сервер запущен на http://localhost:${PORT}`));
