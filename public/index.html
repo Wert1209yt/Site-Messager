@@ -1,234 +1,268 @@
 <!DOCTYPE html>
- <html lang="ru">
- <head>
-     <meta charset="UTF-8">
-     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-     <title>Чат с голосовыми сообщениями</title>
-     <style>
-           body {
-               font-family: Arial, sans-serif;
-               background-color: #f4f4f4;
-               color: #333;
-           }
-           #chatPanel {
-               display: none;
-           }
-           textarea {
-               width: 100%;
-               height: 100px;
-           }
-           img {
-               max-width: 100%; /* Ограничиваем ширину изображения */
-               height: auto; /* Сохраняем пропорции */
-           }
-     </style>
- </head>
- <body>
- 
- <div id="authPanel">
-     <h2>Регистрация</h2>
-     <input type="text" id="registerNickname" placeholder="Никнейм" required>
-     <input type="password" id="registerPassword" placeholder="Пароль" required>
-     <button onclick="register()">Зарегистрироваться</button>
- 
-     <h2>Вход</h2>
-     <input type="text" id="loginNickname" placeholder="Никнейм" required>
-     <input type="password" id="loginPassword" placeholder="Пароль" required>
-     <button onclick="login()">Войти</button>
- </div>
- 
- <div id="chatPanel" style="display:none;">
-     <h2>Отправка текста</h2>
-     <textarea id="textInput" rows="5" cols="50" placeholder="Введите текст здесь"></textarea><br>
-     <button onclick="saveText()">Сохранить текст</button>
- 
-     <h2>Отправка изображения</h2>
-     <input type="file" id="imageInput" accept="image/*"><br>
-     <button onclick="uploadImage()">Отправить изображение</button>
- 
-     <h2>Запись голосового сообщения</h2>
-     <button id="recordButton">Начать запись</button>
- 
-     <h3>Тексты пользователей</h3>
-     <pre id="displayText"></pre>
- </div>
- 
- <script>
- let mediaRecorder;
- let audioChunks = [];
- 
- // Регистрация пользователя
- async function register() {
-    const nickname = document.getElementById('registerNickname').value;
-    const password = document.getElementById('registerPassword').value;
- 
-    const response = await fetch('/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nickname, password })
-    });
- 
-    const message = await response.text();
-    alert(message);
- }
- 
- // Вход в аккаунт
- async function login() {
-    const nickname = document.getElementById('loginNickname').value;
-    const password = document.getElementById('loginPassword').value;
- 
-    const response = await fetch('/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nickname, password })
-    });
- 
-    if (response.ok) {
-        alert(`Вы вошли как ${nickname}`);
-        document.getElementById('authPanel').style.display = 'none'; // Скрываем панель авторизации
-        document.getElementById('chatPanel').style.display = 'block'; // Показываем панель чата
- 
-        // Очистка полей после входа
-        document.getElementById('loginNickname').value = '';
-        document.getElementById('loginPassword').value = '';
- 
-        updateChat(); // Обновляем чат при входе
-    } else {
-        const message = await response.text();
-        alert(message);
-    }
- }
- 
- // Выход из аккаунта
- async function logout() {
-    const response = await fetch('/logout', { method: 'POST' });
- 
-    if (response.ok) {
-        alert('Вы вышли из аккаунта.');
-        document.getElementById('authPanel').style.display = 'block'; // Показываем панель авторизации
-        document.getElementById('chatPanel').style.display = 'none'; // Скрываем панель чата
-    } else {
-        alert('Ошибка при выходе из аккаунта.');
-    }
- }
- 
- // Сохранение текстового сообщения
- async function saveText() {
-    const text = document.getElementById('textInput').value;
- 
-    if (!text) {
-        alert('Введите текст перед отправкой!');
-        return;
-    }
- 
-    // Отправляем текст на сервер
-    const response = await fetch('/save-text', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text })
-    });
- 
-    const message = await response.text();
-    alert(message);
- 
-    updateChat(); // Обновляем чат после отправки текста
- }
- 
- // Загрузка изображения
- async function uploadImage() {
-    const imageInput = document.getElementById("imageInput");
- 
-    if (!imageInput.files.length) {
-        alert("Пожалуйста выберите изображение.");
-        return;
-    }
- 
-    const formData = new FormData();
-    formData.append("image", imageInput.files[0]);
- 
-    // Отправляем изображение на сервер
-    const response = await fetch('/upload-image', {
-        method: 'POST',
-        body: formData
-    });
- 
-    const message = await response.text();
-    alert(message);
- 
-    updateChat(); // Обновляем чат после отправки изображения
- }
- 
- // Начало записи голосового сообщения
- document.getElementById("recordButton").onclick = async function() {
-     if (!mediaRecorder) {
-         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-         mediaRecorder = new MediaRecorder(stream);
- 
-         mediaRecorder.ondataavailable = event => {
-             audioChunks.push(event.data);
-         };
- 
-         mediaRecorder.onstop = async () => {
-             const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-             audioChunks = [];
-             const formData = new FormData();
-             formData.append("voice", audioBlob, "voice_message.wav");
- 
-             // Отправляем голосовое сообщение на сервер
-             const response = await fetch('/upload-voice', {
-                 method: 'POST',
-                 body: formData
-             });
- 
-             const message = await response.text();
-             alert(message);
-         };
- 
-         mediaRecorder.start();
-         this.textContent = "Остановить запись"; // Изменяем текст кнопки
- 
-     } else {
-         mediaRecorder.stop();
-         this.textContent = "Начать запись"; // Возвращаем текст кнопки к исходному состоянию
-         mediaRecorder = null; // Сбрасываем медиаплеер для новой записи
-     }
- };
- 
- // Функция для обновления текста на странице
- async function updateChat() {
-    const response = await fetch('/get-text');
- 
-    if (response.ok) {
-        const data = await response.text();
-        document.getElementById('displayText').innerHTML = data; // Используем innerHTML для отображения HTML-контента
-    } else {
-        console.error("Ошибка при обновлении чата.");
-    }
- }
- 
- // Периодическое обновление текста каждые 5 секунд
- setInterval(updateChat, 5000);
- 
- // Проверка состояния входа при загрузке страницы
- window.onload = async function() {
-    try {
-        await updateChat(); // Загружаем тексты пользователей
- 
-        // Проверяем наличие токена в cookies и отображаем соответствующие панели
-        const response = await fetch('/get-text'); 
- 
-        if (response.ok) { 
-            document.getElementById("authPanel").style.display ="none"; 
-            document.getElementById("chatPanel").style.display ="block"; 
-        } else { 
-            document.getElementById("authPanel").style.display ="block"; 
-            document.getElementById("chatPanel").style.display ="none"; 
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Групповые чаты</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    display: flex;
+    height: 100vh;
+}
+
+/* Список чатов */
+#chatList {
+    width: 250px;
+    background: #f0f0f0;
+    border-right: 1px solid #ccc;
+    overflow-y: auto;
+}
+
+.chat-card {
+    padding: 10px;
+    border-bottom: 1px solid #ccc;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    position: relative;
+}
+
+.chat-card:hover {
+    background: #e0e0e0;
+}
+
+.chat-name {
+    font-weight: bold;
+}
+
+.chat-info {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+/* Меню действий чата */
+.chat-menu {
+    position: absolute;
+    top: 30px;
+    right: 10px;
+    background: #fff;
+    border: 1px solid #aaa;
+    z-index: 100;
+    display: none;
+    flex-direction: column;
+}
+
+.chat-menu button {
+    border: none;
+    background: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    text-align: left;
+}
+
+.chat-menu button:hover {
+    background: #eee;
+}
+
+/* Панель сообщений */
+#chatPanel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+#messages {
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+    background: #fafafa;
+    border-bottom: 1px solid #ccc;
+}
+
+.message {
+    margin-bottom: 10px;
+}
+
+.message-author {
+    font-weight: bold;
+}
+
+#sendPanel {
+    padding: 10px;
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+#sendPanel textarea {
+    flex: 1;
+    height: 50px;
+}
+</style>
+</head>
+<body>
+
+<div id="chatList">
+    <h3 style="padding:10px;">Чаты</h3>
+    <div id="chatsContainer"></div>
+    <div style="padding:10px;">
+        <input type="text" id="newChatName" placeholder="Название нового чата">
+        <button onclick="createChat()">Создать</button>
+        <br><br>
+        <input type="text" id="joinChatId" placeholder="Присоединиться по ID">
+        <button onclick="joinChat()">Присоединиться</button>
+    </div>
+</div>
+
+<div id="chatPanel">
+    <h3 id="currentChatName" style="padding:10px; margin:0;">Выберите чат</h3>
+    <div id="messages"></div>
+    <div id="sendPanel">
+        <textarea id="textInput" placeholder="Введите сообщение"></textarea>
+        <input type="file" id="fileInput">
+        <button onclick="sendMessage()">Отправить</button>
+    </div>
+</div>
+
+<script>
+let currentChatId = null;
+let chats = [];
+
+async function loadChats() {
+    const res = await fetch('/chats');
+    chats = await res.json();
+    const container = document.getElementById('chatsContainer');
+    container.innerHTML = '';
+
+    chats.forEach(chat => {
+        const card = document.createElement('div');
+        card.className = 'chat-card';
+        card.dataset.id = chat.id;
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'chat-name';
+        nameSpan.textContent = chat.name;
+
+        const infoBtn = document.createElement('button');
+        infoBtn.className = 'chat-info';
+        infoBtn.textContent = '⋮';
+
+        const menu = document.createElement('div');
+        menu.className = 'chat-menu';
+        menu.innerHTML = `<button onclick="kickMember(${chat.id})">Кикнуть участника</button>
+                          <button onclick="showMembers(${chat.id})">Участники</button>
+                          <button onclick="leaveChat(${chat.id})">Выйти из чата</button>`;
+
+        infoBtn.onclick = (e) => {
+            e.stopPropagation();
+            menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
         }
-    } catch (error) {
-        console.error("Ошибка при проверке состояния входа:", error);
-    }
- };
- </script>
- 
- </body>
- </html>
+
+        card.onclick = () => selectChat(chat.id);
+
+        card.appendChild(nameSpan);
+        card.appendChild(infoBtn);
+        card.appendChild(menu);
+        container.appendChild(card);
+    });
+}
+
+function selectChat(chatId) {
+    currentChatId = chatId;
+    const chat = chats.find(c => c.id == chatId);
+    document.getElementById('currentChatName').textContent = chat.name;
+    updateMessages();
+}
+
+// --- Создать чат ---
+async function createChat() {
+    const name = document.getElementById('newChatName').value;
+    if (!name) return alert('Введите название чата');
+    await fetch('/chat/create', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({name, members:[]})
+    });
+    document.getElementById('newChatName').value='';
+    await loadChats();
+}
+
+// --- Присоединиться к чату ---
+async function joinChat() {
+    const id = document.getElementById('joinChatId').value;
+    await fetch('/chat/join', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({chatId:id})
+    });
+    document.getElementById('joinChatId').value='';
+    await loadChats();
+}
+
+// --- Отправка сообщений ---
+async function sendMessage() {
+    if (!currentChatId) return alert('Выберите чат');
+    const text = document.getElementById('textInput').value;
+    const fileInput = document.getElementById('fileInput');
+    const formData = new FormData();
+    if (text) formData.append('text', text);
+    if (fileInput.files[0]) formData.append('file', fileInput.files[0]);
+
+    await fetch(`/chat/${currentChatId}/message`, {method:'POST', body: formData});
+    document.getElementById('textInput').value='';
+    fileInput.value='';
+    updateMessages();
+}
+
+// --- Обновление сообщений ---
+async function updateMessages() {
+    if (!currentChatId) return;
+    const res = await fetch(`/chat/${currentChatId}/messages`);
+    const messages = await res.json();
+    const container = document.getElementById('messages');
+    container.innerHTML = '';
+    messages.forEach(m => {
+        const div = document.createElement('div');
+        div.className = 'message';
+        if (m.type === 'text') div.innerHTML = `<span class="message-author">${m.author}:</span> ${m.content}`;
+        if (m.type === 'image') div.innerHTML = `<span class="message-author">${m.author}:</span> <img src="${m.content}" style="max-width:200px;">`;
+        if (m.type === 'voice') div.innerHTML = `<span class="message-author">${m.author}:</span> <audio controls src="${m.content}"></audio>`;
+        container.appendChild(div);
+    });
+}
+
+// --- Кик участника (только автор) ---
+function kickMember(chatId) {
+    const member = prompt('Введите ник участника для кика:');
+    if (!member) return;
+    fetch('/chat/' + chatId + '/kick', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({member})
+    }).then(()=>updateMessages());
+}
+
+// --- Показать участников ---
+function showMembers(chatId) {
+    const chat = chats.find(c => c.id==chatId);
+    alert('Участники: ' + chat.members.join(', '));
+}
+
+// --- Выйти из чата ---
+async function leaveChat(chatId) {
+    alert('Для выхода просто закройте чат. Реальный выход можно добавить на сервере.');
+}
+
+// --- Обновление каждые 5 секунд ---
+setInterval(updateMessages, 5000);
+
+// --- Инициализация ---
+window.onload = loadChats;
+</script>
+</body>
+</html>
