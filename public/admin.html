@@ -1,29 +1,90 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Админ Панель</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Админ Панель</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    margin: 0;
+    height: 100vh;
+}
+
+/* Левая колонка — чаты */
+#chatList {
+    width: 300px;
+    border-right: 1px solid #ccc;
+    background: #f0f0f0;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.chat-card {
+    padding: 8px;
+    border-bottom: 1px solid #aaa;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    position: relative;
+}
+
+.chat-card:hover { background: #e0e0e0; }
+
+.chat-info {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.chat-menu {
+    position: absolute;
+    top: 28px;
+    right: 10px;
+    display: none;
+    flex-direction: column;
+    background: #fff;
+    border: 1px solid #aaa;
+    z-index: 10;
+}
+
+.chat-menu button {
+    padding: 5px 10px;
+    border: none;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+}
+
+.chat-menu button:hover { background: #eee; }
+
+/* Правая колонка — панель действий */
+#adminPanel {
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+}
+
+h2, h3 { margin-top: 10px; margin-bottom: 5px; }
+
+button { cursor: pointer; margin-top: 3px; }
+</style>
 </head>
 <body>
 
-<h2>Вход в админ панель</h2>
-<input type="password" id="adminPassword" placeholder="Введите пароль">
-<button onclick="adminLogin()">Войти</button>
+<div id="chatList">
+    <h2>Чаты</h2>
+    <div id="chatsContainer"></div>
+</div>
 
-<div id="adminPanel" style="display:none;">
+<div id="adminPanel">
     <h2>Админ Панель</h2>
 
     <h3>Список пользователей</h3>
     <ul id="userList"></ul>
-
-    <h3>Блокировка пользователя</h3>
-    <input type="text" id="blockNickname" placeholder="Никнейм">
-    <button onclick="blockUser()">Заблокировать</button>
-
-    <h3>Разблокировка пользователя</h3>
-    <input type="text" id="unblockNickname" placeholder="Никнейм">
-    <button onclick="unblockUser()">Разблокировать</button>
 
     <h3>Удаление сообщения</h3>
     <input type="number" id="messageIndex" placeholder="Индекс сообщения">
@@ -38,126 +99,133 @@
 </div>
 
 <script>
-// Вход в админ панель
-async function adminLogin() {
-     const password = document.getElementById("adminPassword").value;
+let chats = [];
+let users = [];
 
-     const response = await fetch('/admin/login', {
-         method: 'POST',
-         headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({ password })
-     });
+// --- Загрузка всех чатов ---
+async function loadChats() {
+    const res = await fetch('/admin/chats');
+    chats = await res.json();
+    const container = document.getElementById('chatsContainer');
+    container.innerHTML = '';
 
-     if(response.ok){
-         alert("Вы вошли в админ панель.");
-         document.getElementById("adminPanel").style.display ="block"; // Показываем панель администратора
-         fetchUsers(); // Загружаем список пользователей после входа в панель администратора
-     } else{
-         alert("Неверный пароль.");
-     }
+    chats.forEach(chat => {
+        const card = document.createElement('div');
+        card.className = 'chat-card';
+        card.dataset.id = chat.id;
+
+        const span = document.createElement('span');
+        span.textContent = chat.name;
+
+        const infoBtn = document.createElement('button');
+        infoBtn.className = 'chat-info';
+        infoBtn.textContent = '⋮';
+
+        const menu = document.createElement('div');
+        menu.className = 'chat-menu';
+        menu.innerHTML = `
+            <button onclick="kickMember(${chat.id})">Кикнуть участника</button>
+            <button onclick="showMembers(${chat.id})">Участники</button>
+        `;
+
+        infoBtn.onclick = (e) => {
+            e.stopPropagation();
+            menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        card.appendChild(span);
+        card.appendChild(infoBtn);
+        card.appendChild(menu);
+        container.appendChild(card);
+    });
 }
 
-// Получение списка пользователей
+// --- Получение списка пользователей ---
 async function fetchUsers() {
-     const response = await fetch('/admin/users');
+    const res = await fetch('/admin/users');
+    users = await res.json();
+    const ul = document.getElementById('userList');
+    ul.innerHTML = '';
+    users.forEach(u => {
+        const li = document.createElement('li');
+        li.textContent = `${u.nickname} - ${u.blocked ? "Заблокирован" : "Активен"}`;
+        // Кнопки блокировки/разблокировки рядом
+        const blockBtn = document.createElement('button');
+        blockBtn.textContent = 'Заблокировать';
+        blockBtn.onclick = () => blockUser(u.nickname);
 
-     if(response.ok){
-         const users = await response.json();
-         const userListElement = document.getElementById("userList");
+        const unblockBtn = document.createElement('button');
+        unblockBtn.textContent = 'Разблокировать';
+        unblockBtn.onclick = () => unblockUser(u.nickname);
 
-         userListElement.innerHTML = ""; // Очищаем список
-
-         users.forEach(user => {
-             const liElement = document.createElement("li");
-             liElement.textContent = `${user.nickname} - ${user.blocked ? "Заблокирован" : "Активен"}`;
-             userListElement.appendChild(liElement);
-         });
-
-     } else{
-         console.error("Ошибка при получении списка пользователей.");
-         alert("Не удалось загрузить список пользователей.");
-     }
+        li.appendChild(blockBtn);
+        li.appendChild(unblockBtn);
+        ul.appendChild(li);
+    });
 }
 
-// Блокировка пользователя
-async function blockUser() {
-     const nickname = document.getElementById("blockNickname").value;
-
-     const response = await fetch('/admin/block-user', {
-         method: 'POST',
-         headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({ nickname })
-     });
-
-     const message = await response.text();
-     alert(message);
-     fetchUsers(); // Обновляем список пользователей после блокировки
+// --- Блокировка/разблокировка ---
+async function blockUser(nick) {
+    const res = await fetch('/admin/block-user', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({nickname:nick})
+    });
+    alert(await res.text());
+    fetchUsers();
+}
+async function unblockUser(nick) {
+    const res = await fetch('/admin/unblock-user', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({nickname:nick})
+    });
+    alert(await res.text());
+    fetchUsers();
 }
 
-// Разблокировка пользователя
-async function unblockUser() {
-     const nickname = document.getElementById("unblockNickname").value;
-
-     const response = await fetch('/admin/unblock-user', {
-         method: 'POST',
-         headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({ nickname })
-     });
-
-     const message = await response.text();
-     alert(message);
-     fetchUsers(); // Обновляем список пользователей после разблокировки
+// --- Кик участника ---
+async function kickMember(chatId) {
+    const member = prompt("Введите ник участника для кика:");
+    if (!member) return;
+    await fetch('/admin/kick', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({chatId, member})
+    });
+    alert(`Пользователь ${member} исключён из чата.`);
+    loadChats();
 }
 
-// Удаление сообщения по индексу
+// --- Показать участников ---
+function showMembers(chatId) {
+    const chat = chats.find(c => c.id==chatId);
+    alert('Участники: ' + chat.members.join(', '));
+}
+
+// --- Удаление сообщения ---
 async function deleteMessage() {
-     const index = document.getElementById("messageIndex").value;
-
-     const response = await fetch('/admin/delete-message', {
-         method: 'POST',
-         headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({ index })
-     });
-
-     const message = await response.text();
-     alert(message);
+    const index = document.getElementById("messageIndex").value;
+    const res = await fetch('/admin/delete-message', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({index})
+    });
+    alert(await res.text());
 }
 
-// Отправка сообщения от имени сервера
+// --- Отправка сообщения от сервера ---
 async function sendServerMessage() {
-    const messageInputValue= document.getElementById('serverMessageInput').value;
-
-	if (!messageInputValue.trim()) { 
-		alert("Введите сообщение перед отправкой!"); 
-		return; 
-	}
-
-	const response= await fetch("/admin/send-message", { 
-		method: "POST", 
-		headers: { "Content-Type": "application/json" }, 
-		body: JSON.stringify({ message: messageInputValue }) 
-	});
-
-	const result= await response.text(); 
-	alert(result);
-
-	// Очистка поля ввода после отправки сообщения 
-	document.getElementById("serverMessageInput").value= ""; 
+    const text = document.getElementById('serverMessageInput').value;
+    if (!text.trim()) return alert('Введите сообщение!');
+    const res = await fetch('/admin/send-message', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message:text})});
+    alert(await res.text());
+    document.getElementById('serverMessageInput').value='';
 }
 
-// Очистка чата
+// --- Очистка чата ---
 async function clearChat() {
-   const response = await fetch('/admin/clear-chat', {
-       method: 'POST'
-   });
-
-   const message = await response.text();
-   alert(message);
+    const res = await fetch('/admin/clear-chat', {method:'POST'});
+    alert(await res.text());
 }
 
-// Загружаем список пользователей при загрузке страницы 
-window.onload= function() {};
+// --- Инициализация ---
+window.onload = async () => {
+    await fetchUsers();
+    await loadChats();
+}
 </script>
-
 </body>
 </html>
