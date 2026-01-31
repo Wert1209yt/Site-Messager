@@ -34,6 +34,7 @@ button.recording{
   border-color:#6d1616;
 }
 .kick-btn{padding:2px 6px;font-size:11px}
+.cancel-edit{background:linear-gradient(#dc3545,#c82333);border-color:#bd2130}
 
 input,textarea{
   border:1px solid #777;
@@ -153,6 +154,7 @@ input,textarea{
 }
 #send textarea{width:100%;height:60px}
 #tools{margin-top:6px;display:flex;gap:6px}
+#tools.editing{justify-content:space-between}
 
 #group-menu{
   display:none;
@@ -277,9 +279,14 @@ input,textarea{
       <textarea id="text"></textarea>
       <div id="tools">
         <input type="file" id="file" accept="image/*,audio/*" hidden>
-        <button class="icon clip" id="pick-file"></button>
-        <button id="record">🎤</button>
-        <button class="icon send" id="send-text"></button>
+        <div>
+          <button class="icon clip" id="pick-file"></button>
+          <button id="record">🎤</button>
+        </div>
+        <div id="send-buttons">
+          <button class="cancel-edit icon" id="cancel-edit" title="Отмена" style="display:none">✕</button>
+          <button class="icon send" id="send-text">➤</button>
+        </div>
       </div>
     </div>
     <div id="status"></div>
@@ -295,15 +302,34 @@ const API={
   edit:'/edit-message',del:'/delete-my-message',
   img:'/upload-image',aud:'/upload-voice',
   changeNick:'/change-nickname',changePass:'/change-password',
-  groupRename:'/groups/:groupId/rename',groupJoin:'/groups/:groupId/add-member',
-  groupMembers:'/groups/:groupId',groupKick:'/groups/:groupId/remove-member'
+  groupRename:'/groups/:groupId/rename',groupJoin:'/groups/:groupId/join'
 };
 
 let currentGroup=null,myNick=null,currentLi=null;
 let editingId=null,mediaRecorder=null,audioChunks=[];
 
+/* AUTO-LOGIN ON PAGE LOAD */
+window.onload=()=>{
+  checkAuth();
+  $('date').textContent=new Date().toLocaleDateString();
+};
+
+async function checkAuth(){
+  try{
+    const r=await fetch(API.profile);
+    if(r.ok){
+      const p=await r.json();
+      myNick=p.nickname;
+      $('profile-id').textContent=p.id;
+      $('auth').style.display='none';
+      $('chats').style.display='block';
+      $('nickname').textContent=p.nickname;
+      loadGroups();
+    }
+  }catch{}
+}
+
 /* DATE + PING */
-$('date').textContent=new Date().toLocaleDateString();
 async function ping(){
   const t=performance.now();
   try{await fetch('/');$('ping').textContent=Math.round(performance.now()-t);}
@@ -316,7 +342,7 @@ async function auth(url){
   const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
   body:JSON.stringify({nickname:$('nick').value,password:$('pass').value})});
   if(!r.ok)return status(r);
-  init();
+  checkAuth();
 }
 $('login').onclick=()=>auth(API.login);
 $('register').onclick=()=>auth(API.register);
@@ -423,18 +449,46 @@ window.play=(b,src)=>{
   else{a.pause();b.textContent='▶';}
 };
 
-/* SEND */
+/* SEND & EDIT */
 $('send-text').onclick=async()=>{
-  const t=$('text').value.trim(); if(!t)return;
-  const url=editingId?API.edit:API.sendText;
-  const body=editingId?{messageId:editingId,newContent:t,groupId:currentGroup}:{text:t,groupId:currentGroup};
-  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  if(!r.ok)return status(r);
-  editingId=null;
-  $('text').value=''; loadMessages();
+  if(editingId){
+    const t=$('text').value.trim();
+    if(!t)return;
+    const r=await fetch(API.edit,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({messageId:editingId,newContent:t,groupId:currentGroup})});
+    if(!r.ok){status(r);return;}
+  }else{
+    const t=$('text').value.trim(); if(!t)return;
+    const r=await fetch(API.sendText,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({text:t,groupId:currentGroup})});
+    if(!r.ok){status(r);return;}
+  }
+  cancelEdit();
+  $('text').value='';
+  loadMessages();
 };
 
-window.editMsg=(id,text)=>{editingId=id;$('text').value=text;$('text').focus();$('send-text').textContent='✓ Сохранить';};
+$('cancel-edit').onclick=cancelEdit;
+
+function cancelEdit(){
+  editingId=null;
+  $('tools').classList.remove('editing');
+  $('cancel-edit').style.display='none';
+  $('send-text').textContent='➤';
+  $('send-text').classList.remove('cancel-edit');
+  $('text').value='';
+}
+
+window.editMsg=(id,text)=>{
+  editingId=id;
+  $('text').value=text;
+  $('text').focus();
+  $('tools').classList.add('editing');
+  $('cancel-edit').style.display='inline-block';
+  $('send-text').textContent='✓';
+  $('send-text').classList.add('cancel-edit');
+};
+
 window.delMsg=async(id)=>{
   if(!confirm('Удалить сообщение?'))return;
   const r=await fetch(API.del,{method:'POST',headers:{'Content-Type':'application/json'},
@@ -533,10 +587,13 @@ $('show-members').onclick=async()=>{
 $('join-btn').onclick=async()=>{
   const id=$('join-id').value.trim();
   if(!id){status({status:'Введите ID'});return;}
-  // Для присоединения по ID нужен никнейм (можно добавить поле или использовать свой)
-  const r=await fetch(`/groups/${id}/add-member`,{method:'POST',headers:{'Content-Type':'application/json'},
-  body:JSON.stringify({memberNickname:myNick})});
-  if(r.ok){loadGroups();$('join-id').value='';status({status:'Присоединились'});}
+  const r=await fetch(`/groups/${id}/join`,{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({})});
+  if(r.ok){
+    loadGroups();
+    $('join-id').value='';
+    status({status:'✅ Присоединились к группе'});
+  }else status(r);
 };
 
 /* EVENT HANDLERS */
