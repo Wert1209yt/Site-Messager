@@ -5,242 +5,150 @@
 <title>Messenger</title>
 
 <style>
-*{box-sizing:border-box}
 body{
   margin:0;
   font-family:Tahoma,Arial,sans-serif;
-  background:linear-gradient(#e4e8f2,#cfd7e6);
-  color:#222;
+  background:#dfe4ef;
 }
-
-/* ===== КНОПКИ ===== */
 button{
-  background:linear-gradient(#5c73d9,#3c4fb3);
-  border:1px solid #2c3b8f;
+  padding:5px 10px;
+  background:#4b5fbf;
+  border:1px solid #2f3e8f;
   color:#fff;
-  padding:6px 10px;
   cursor:pointer;
 }
-button:hover{filter:brightness(1.1)}
-button.icon{
-  width:36px;
-  padding:6px;
-  font-weight:bold;
-}
-button.send::before{content:"➤";}
-button.clip::before{content:"⎘";}
-
-button.recording{
-  background:linear-gradient(#b94a48,#8b1e1e);
-  border-color:#6d1616;
-}
-
-/* ===== INPUT ===== */
+button:hover{background:#3f52a3}
 input,textarea{
   border:1px solid #777;
-  padding:6px;
+  padding:5px;
   font-family:inherit;
 }
-
-/* ===== TOP ===== */
-#topbar{
-  height:44px;
-  background:linear-gradient(#444,#2b2b2b);
-  color:#fff;
-  display:flex;
-  justify-content:flex-end;
-  align-items:center;
-  padding:0 10px;
-}
-#profile{display:none;align-items:center;gap:8px}
-#profile img{width:26px;height:26px;border-radius:3px;background:#666}
-
-/* ===== LAYOUT ===== */
-#wrapper{display:flex;height:calc(100vh - 44px)}
+#wrapper{display:flex;height:100vh}
 #sidebar{
-  width:260px;
-  background:linear-gradient(#f8f9fd,#dbe2f3);
+  width:270px;
+  background:#eef1f8;
   border-right:1px solid #9aa3b7;
   padding:8px;
 }
 #content{flex:1;display:flex;flex-direction:column}
-
-/* ===== LEFT INFO ===== */
-#left-info{
-  background:#fff;
-  border:1px solid #9aa3b7;
-  padding:6px;
-  font-size:12px;
-  margin-bottom:8px;
-}
-#ping{color:#2c3b8f}
-
-/* ===== AUTH ===== */
-#auth{
-  background:#fff;
-  border:1px solid #9aa3b7;
-  padding:8px;
-}
-
-/* ===== GROUPS ===== */
-#chat-list{list-style:none;padding:0;margin:0}
-#chat-list li{
-  background:linear-gradient(#fff,#e7ebf7);
-  border:1px solid #9aa3b7;
-  margin-bottom:6px;
-  padding:6px;
-  cursor:pointer;
-}
-#chat-list li.active{
-  background:linear-gradient(#d6e0ff,#b9c8ff);
-}
-.chat-id{font-size:11px;color:#555}
-.chat-actions span{
-  font-size:12px;
-  color:#3c4fb3;
-  cursor:pointer;
-}
-
-/* ===== MESSAGES ===== */
 #messages{
   flex:1;
   background:#fff;
-  border-bottom:1px solid #9aa3b7;
-  overflow-y:auto;
   padding:10px;
+  overflow-y:auto;
 }
 .message{
-  margin-bottom:10px;
-  padding-bottom:4px;
   border-bottom:1px dotted #ccc;
+  margin-bottom:8px;
 }
 .author{font-weight:bold;color:#2c3b8f}
-.time{font-size:11px;color:#666;margin-left:6px}
-.edited{font-size:11px;color:#999;margin-left:6px}
-.msg-actions{float:right;font-size:12px}
-.msg-actions span{
-  cursor:pointer;
-  color:#3c4fb3;
-  margin-left:6px;
+.edited{font-size:11px;color:#777;margin-left:6px}
+.msg-actions{
+  float:right;
+  font-size:12px;
 }
-
-/* ===== AUDIO PLAYER ===== */
-.audio{
-  display:flex;
-  align-items:center;
-  gap:6px;
-}
-.audio button{
-  width:28px;
-  height:28px;
+.msg-actions button{
+  background:none;
+  border:none;
+  color:#2c3b8f;
   padding:0;
 }
-.audio .bar{
-  flex:1;
-  height:6px;
-  background:#cfd7e6;
-  position:relative;
-}
-.audio .bar span{
-  position:absolute;
-  height:100%;
-  background:#3c4fb3;
-  width:0%;
-}
-
-/* ===== SEND ===== */
 #send{
+  background:#dde3f3;
   padding:8px;
-  background:linear-gradient(#eef2fb,#d9e0f1);
 }
-#send textarea{width:100%;height:60px}
-#tools{margin-top:6px;display:flex;gap:6px}
-
-/* ===== GROUP MENU ===== */
-#group-menu{
-  display:none;
-  background:#fff;
-  border:1px solid #9aa3b7;
-  padding:8px;
-  margin-top:8px;
+#bottom{
+  font-size:12px;
+  padding:4px 8px;
+  background:#cfd6e8;
+  border-top:1px solid #9aa3b7;
 }
-
-/* ===== STATUS ===== */
-#status{padding:4px 8px;color:#a00000;font-size:13px}
+.hidden{display:none}
+table{width:100%;font-size:12px}
 </style>
 </head>
 
 <body>
 
-<div id="topbar">
-  <div id="profile">
-    <img id="avatar">
-    <span id="nickname"></span>
-    <button id="logout">Выйти</button>
-  </div>
+<div id="wrapper">
+
+<!-- SIDEBAR -->
+<div id="sidebar">
+
+<div id="auth">
+<b>Вход</b><br><br>
+<input id="nick" placeholder="Ник"><br><br>
+<input id="pass" type="password" placeholder="Пароль"><br><br>
+<button id="login">Войти</button>
+<button id="register">Регистрация</button>
 </div>
 
-<div id="wrapper">
-  <div id="sidebar">
+<div id="user" class="hidden">
+<b id="user-nick"></b><br><br>
 
-    <div id="left-info">
-      <div id="date"></div>
-      <div>Ping: <span id="ping">–</span> ms</div>
-    </div>
+<button id="open-profile">Профиль</button>
+<div id="profile" class="hidden">
+<br>
+<input id="new-nick" placeholder="Новый ник"><br><br>
+<input id="old-pass" type="password" placeholder="Старый пароль"><br><br>
+<input id="new-pass" type="password" placeholder="Новый пароль"><br><br>
+<button id="save-profile">Сохранить</button>
+</div>
 
-    <div id="auth">
-      <b>Вход</b><br><br>
-      <input id="nick" placeholder="Ник"><br><br>
-      <input id="pass" type="password" placeholder="Пароль"><br><br>
-      <button id="login">Войти</button>
-      <button id="register">Регистрация</button>
-    </div>
+<hr>
 
-    <div id="chats" style="display:none">
-      <b>Чаты</b><br><br>
-      <ul id="chat-list"></ul>
+<b>Чаты</b>
+<ul id="groups"></ul>
 
-      <button id="open-group-menu">Создать группу</button>
-      <div id="group-menu">
-        <input id="group-name" placeholder="Название группы" style="width:100%">
-        <div style="margin-top:10px"></div>
-        <button id="create-group">Создать</button>
-      </div>
-    </div>
+<input id="join-id" placeholder="ID группы"><br><br>
+<button id="join-group">Вступить</button><br><br>
 
-  </div>
+<button id="open-create">Создать группу</button>
+<div id="create-menu" class="hidden">
+<br>
+<input id="group-name" placeholder="Название"><br><br>
+<button id="create-group">Создать</button>
+</div>
 
-  <div id="content">
-    <div id="messages"></div>
+<div id="group-admin" class="hidden">
+<hr>
+<b>Управление группой</b><br><br>
+<input id="kick-nick" placeholder="Ник участника"><br><br>
+<button id="kick">Кик</button><br><br>
+<button id="delete-group">Удалить группу</button>
+</div>
 
-    <div id="send" style="display:none">
-      <textarea id="text"></textarea>
-      <div id="tools">
-        <input type="file" id="file" accept="image/*,audio/*" hidden>
-        <button class="icon clip" id="pick-file"></button>
-        <button id="record">Запись</button>
-        <button class="icon send" id="send-text"></button>
-      </div>
-    </div>
+</div>
 
-    <div id="status"></div>
-  </div>
+</div>
+
+<!-- CONTENT -->
+<div id="content">
+<div id="messages"></div>
+
+<div id="send" class="hidden">
+<textarea id="text" style="width:100%;height:60px"></textarea><br><br>
+<button id="send-text">Отправить</button>
+</div>
+
+<div id="bottom">
+<table>
+<tr>
+<td id="date"></td>
+<td align="right">Ping: <span id="ping">–</span> ms</td>
+</tr>
+</table>
+</div>
+</div>
+
 </div>
 
 <script>
 const $=id=>document.getElementById(id);
-const API={
-  login:'/login',register:'/register',logout:'/logout',profile:'/profile',
-  groups:'/groups',createGroup:'/groups/create',deleteGroup:'/groups/delete',
-  getText:'/get-text',sendText:'/save-text',
-  edit:'/edit-messege',del:'/delete-messege',
-  img:'/upload-image',aud:'/upload-voice'
-};
-
 let currentGroup=null,myNick=null;
 
-/* DATE + PING */
-$('date').textContent=new Date().toLocaleDateString();
+/* ping */
+$('date').textContent=new Date().toLocaleString();
 async function ping(){
   const t=performance.now();
   await fetch('/');
@@ -248,136 +156,121 @@ async function ping(){
 }
 setInterval(ping,5000); ping();
 
-/* AUTH */
+/* auth */
 async function auth(url){
   const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
   body:JSON.stringify({nickname:$('nick').value,password:$('pass').value})});
-  if(!r.ok)return status(r);
+  if(!r.ok)return;
   init();
 }
-$('login').onclick=()=>auth(API.login);
-$('register').onclick=()=>auth(API.register);
-$('logout').onclick=async()=>{await fetch(API.logout,{method:'POST'});location.reload();};
+$('login').onclick=()=>auth('/login');
+$('register').onclick=()=>auth('/register');
 
 async function init(){
-  const r=await fetch(API.profile); if(!r.ok)return;
-  const p=await r.json(); myNick=p.nickname;
-  $('auth').style.display='none';
-  $('chats').style.display='block';
-  $('profile').style.display='flex';
-  $('nickname').textContent=p.nickname;
-  $('avatar').src=p.avatar||'';
+  const r=await fetch('/profile');
+  if(!r.ok)return;
+  const p=await r.json();
+  myNick=p.nickname;
+  $('auth').classList.add('hidden');
+  $('user').classList.remove('hidden');
+  $('user-nick').textContent=p.nickname;
   loadGroups();
 }
-init();
 
-/* GROUPS */
-$('open-group-menu').onclick=()=>$('group-menu').style.display=
-  $('group-menu').style.display==='none'?'block':'none';
-
-$('create-group').onclick=async()=>{
-  const n=$('group-name').value.trim(); if(!n)return;
-  const r=await fetch(API.createGroup,{method:'POST',headers:{'Content-Type':'application/json'},
-  body:JSON.stringify({name:n})});
-  if(!r.ok)return status(r);
-  $('group-name').value=''; loadGroups();
-};
-
+/* groups */
 async function loadGroups(){
-  const r=await fetch(API.groups); if(!r.ok)return status(r);
-  const g=await r.json(); $('chat-list').innerHTML='';
-  g.forEach(c=>{
+  const r=await fetch('/groups');
+  const g=await r.json();
+  $('groups').innerHTML='';
+  g.forEach(gr=>{
     const li=document.createElement('li');
-    li.innerHTML=`<div>${c.name}</div><div class="chat-id">id: ${c.id}</div>
-    ${c.author===myNick?`<div class="chat-actions">
-    <span onclick="delGroup(${c.id})">удалить</span></div>`:''}`;
-    li.onclick=()=>openChat(c.id,li);
-    $('chat-list').appendChild(li);
+    li.textContent=gr.name+' ('+gr.id+')';
+    li.onclick=()=>openGroup(gr);
+    $('groups').appendChild(li);
   });
 }
-window.delGroup=async(id)=>{
-  if(!confirm('Удалить группу?'))return;
-  const r=await fetch(API.deleteGroup,{method:'POST',headers:{'Content-Type':'application/json'},
-  body:JSON.stringify({id})});
-  if(!r.ok)return status(r);
-  loadGroups(); $('messages').innerHTML=''; $('send').style.display='none';
-};
 
-function openChat(id,li){
-  currentGroup=id;
-  [...$('chat-list').children].forEach(x=>x.classList.remove('active'));
-  li.classList.add('active');
-  $('send').style.display='block';
+function openGroup(gr){
+  currentGroup=gr.id;
+  $('send').classList.remove('hidden');
+  $('group-admin').classList.toggle('hidden',gr.author!==myNick);
   loadMessages();
 }
 
-/* MESSAGES */
+$('open-create').onclick=()=>{
+  const m=$('create-menu');
+  m.classList.toggle('hidden');
+};
+
+$('create-group').onclick=async()=>{
+  await fetch('/groups/create',{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({name:$('group-name').value})});
+  loadGroups();
+};
+
+/* messages */
 async function loadMessages(){
-  const r=await fetch(API.getText+'?groupId='+currentGroup);
-  if(!r.ok)return status(r);
-  const m=await r.json(); $('messages').innerHTML='';
+  const r=await fetch('/get-text?groupId='+currentGroup);
+  const m=await r.json();
+  $('messages').innerHTML='';
   m.forEach(msg=>{
-    const d=document.createElement('div'); d.className='message';
+    const d=document.createElement('div');
+    d.className='message';
     d.innerHTML=`
       <span class="author">${msg.author}</span>
-      <span class="time">${msg.time||''}</span>
       ${msg.edited?'<span class="edited">(изменено)</span>':''}
       ${msg.author===myNick?`
       <span class="msg-actions">
-        <span onclick="editMsg(${msg.id},\`${msg.content}\`)">ред</span>
-        <span onclick="delMsg(${msg.id})">уд</span>
+        <button onclick="editMessage(${msg.id},\`${msg.content}\`)">ред</button>
+        <button onclick="deleteMessage(${msg.id})">уд</button>
       </span>`:''}
-      <div>${render(msg)}</div>`;
+      <div>${msg.content}</div>`;
     $('messages').appendChild(d);
   });
-  $('messages').scrollTop=1e9;
 }
 
-function render(m){
-  if(m.type==='image')return `<img src="${m.content}" width="220">`;
-  if(m.type==='voice')return audio(m.content);
-  return m.content;
-}
-
-function audio(src){
-  return `<div class="audio">
-    <button onclick="play(this,'${src}')">▶</button>
-    <div class="bar"><span></span></div>
-  </div>`;
-}
-
-window.play=(b,src)=>{
-  const a=new Audio(src);
-  const bar=b.nextElementSibling.firstChild;
-  a.ontimeupdate=()=>bar.style.width=(a.currentTime/a.duration*100)+'%';
-  a.onended=()=>b.textContent='▶';
-  if(b.textContent==='▶'){b.textContent='■';a.play();}
-  else{a.pause();b.textContent='▶';}
+window.editMessage=async(id,old)=>{
+  const t=prompt('Редактировать',old);
+  if(t===null)return;
+  await fetch('/edit-messege',{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({id,text:t})});
+  loadMessages();
 };
 
-/* SEND */
+window.deleteMessage=async(id)=>{
+  if(!confirm('Удалить сообщение?'))return;
+  await fetch('/delete-messege',{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({id})});
+  loadMessages();
+};
+
+/* send */
 $('send-text').onclick=async()=>{
-  const t=$('text').value.trim(); if(!t)return;
-  const r=await fetch(API.sendText,{method:'POST',headers:{'Content-Type':'application/json'},
+  const t=$('text').value.trim();
+  if(!t)return;
+  await fetch('/save-text',{method:'POST',headers:{'Content-Type':'application/json'},
   body:JSON.stringify({groupId:currentGroup,text:t})});
-  if(!r.ok)return status(r);
-  $('text').value=''; loadMessages();
+  $('text').value='';
+  loadMessages();
 };
 
-$('pick-file').onclick=()=>$('file').click();
-$('file').onchange=async()=>{
-  const f=$('file').files[0]; if(!f)return;
-  const fd=new FormData();
-  fd.append(f.type.startsWith('image')?'image':'voice',f);
-  fd.append('groupId',currentGroup);
-  const url=f.type.startsWith('image')?API.img:API.aud;
-  const r=await fetch(url,{method:'POST',body:fd});
-  if(!r.ok)return status(r);
-  $('file').value=''; loadMessages();
+/* admin */
+$('kick').onclick=async()=>{
+  await fetch('/kick-member',{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({groupId:currentGroup,nickname:$('kick-nick').value})});
 };
 
-/* STATUS */
-function status(r){$('status').textContent='Ошибка '+r.status;}
+$('delete-group').onclick=async()=>{
+  if(!confirm('Удалить группу?'))return;
+  await fetch('/groups/delete',{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({id:currentGroup})});
+  currentGroup=null;
+  $('messages').innerHTML='';
+  $('send').classList.add('hidden');
+  loadGroups();
+};
+
+init();
 </script>
 
 </body>
