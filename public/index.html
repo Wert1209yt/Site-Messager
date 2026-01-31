@@ -2,198 +2,361 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Мессенгер</title>
+<title>Messenger</title>
+
 <style>
-body { font-family: Tahoma, sans-serif; background: #c0c0c0; margin:0; display:flex; flex-direction:column; height:100vh; }
-#topMenu { background:#000080; color:#fff; padding:5px 10px; display:flex; justify-content:space-between; align-items:center; font-weight:bold; }
-#topMenu button { margin-left:5px; font-size:12px; }
-#mainContainer { display:flex; flex:1; overflow:hidden; }
-#chatSidebar { width:280px; background:#e0e0e0; border-right:2px solid #808080; padding:5px; display:flex; flex-direction:column; overflow-y:auto; }
-#chatSidebar input { margin-bottom:5px; width:calc(100% - 10px); }
-.chat-section { margin-bottom:10px; }
-.chat-card { background:#fff; border:1px solid #808080; padding:5px; margin-bottom:2px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
-.chat-card:hover { background:#d0d0ff; }
-.chat-name { font-weight:bold; font-size:12px; }
-.chat-members { font-size:10px; }
-#chatPanel { flex:1; display:flex; flex-direction:column; background:#f8f8f8; padding:5px; }
-#chatHeader { background:#8080ff; padding:5px; font-weight:bold; font-size:14px; border-bottom:2px solid #000080; }
-#messages { flex:1; overflow-y:auto; margin-top:5px; border:1px solid #808080; background:#fff; padding:5px; }
-.message { margin-bottom:5px; font-size:12px; }
-.message-author { font-weight:bold; }
-#sendPanel { display:flex; gap:3px; margin-top:5px; }
-#sendPanel textarea { flex:1; height:50px; font-family:Tahoma; font-size:12px; }
-#sendPanel input[type="file"] { font-size:12px; }
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Tahoma,Arial,sans-serif;
+  background:linear-gradient(#e4e8f2,#cfd7e6);
+}
+button{
+  background:linear-gradient(#5c73d9,#3c4fb3);
+  border:1px solid #2c3b8f;
+  color:#fff;
+  padding:5px 10px;
+  cursor:pointer;
+}
+button:hover{filter:brightness(1.1)}
+input,textarea{
+  border:1px solid #777;
+  padding:5px;
+  font-family:inherit;
+}
+
+/* верх */
+#topbar{
+  height:44px;
+  background:linear-gradient(#444,#2b2b2b);
+  color:#fff;
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  padding:0 10px;
+}
+#profile{display:none;align-items:center;gap:8px}
+#profile img{width:26px;height:26px;border-radius:3px;background:#666}
+
+/* лейаут */
+#wrapper{display:flex;height:calc(100vh - 44px)}
+#sidebar{
+  width:260px;
+  background:linear-gradient(#f8f9fd,#dbe2f3);
+  border-right:1px solid #9aa3b7;
+  padding:8px;
+}
+#content{flex:1;display:flex;flex-direction:column}
+
+/* авторизация */
+#auth{
+  background:#fff;
+  border:1px solid #9aa3b7;
+  padding:8px;
+}
+
+/* чаты */
+#chat-list{list-style:none;padding:0;margin:0}
+#chat-list li{
+  background:linear-gradient(#fff,#e7ebf7);
+  border:1px solid #9aa3b7;
+  margin-bottom:6px;
+  padding:6px;
+  cursor:pointer;
+}
+#chat-list li.active{
+  background:linear-gradient(#d6e0ff,#b9c8ff);
+}
+.chat-id{font-size:11px;color:#555}
+.chat-actions{margin-top:4px}
+.chat-actions span{
+  font-size:12px;
+  color:#3c4fb3;
+  cursor:pointer;
+}
+
+/* сообщения */
+#messages{
+  flex:1;
+  background:#fff;
+  border-bottom:1px solid #9aa3b7;
+  overflow-y:auto;
+  padding:10px;
+}
+.message{
+  margin-bottom:10px;
+  padding-bottom:4px;
+  border-bottom:1px dotted #ccc;
+}
+.author{font-weight:bold;color:#2c3b8f}
+.time{font-size:11px;color:#666;margin-left:6px}
+.edited{font-size:11px;color:#999;margin-left:6px}
+.msg-actions{float:right;font-size:12px}
+.msg-actions span{
+  cursor:pointer;
+  color:#3c4fb3;
+  margin-left:6px;
+}
+
+/* отправка */
+#send{
+  padding:8px;
+  background:linear-gradient(#eef2fb,#d9e0f1);
+}
+#send textarea{width:100%;height:60px}
+#tools{margin-top:6px;display:flex;gap:6px}
+
+/* статус */
+#status{padding:4px 8px;color:#a00000;font-size:13px}
 </style>
 </head>
+
 <body>
 
-<div id="topMenu">
-    <span>Аккаунт: <span id="accountName">Гость</span></span>
-    <span>
-        <button onclick="editAccount()">Изменить ник</button>
-        <button onclick="goHome()">Главная</button>
-    </span>
+<div id="topbar">
+  <div id="profile">
+    <img id="avatar">
+    <span id="nickname"></span>
+    <button id="logout">Выйти</button>
+  </div>
 </div>
 
-<div id="mainContainer">
-    <div id="chatSidebar">
-        <input type="text" id="searchChat" placeholder="Поиск по ID или названию" oninput="filterChats()">
+<div id="wrapper">
+  <div id="sidebar">
 
-        <div class="chat-section">
-            <h4>Создать чат</h4>
-            <input type="text" id="newChatName" placeholder="Название чата">
-            <input type="text" id="newChatPassword" placeholder="Пароль (опционально)">
-            <button onclick="createChat()">Создать</button>
-        </div>
-
-        <div class="chat-section" id="joinedChats">
-            <h4>Ваши чаты</h4>
-            <div id="joinedContainer"></div>
-        </div>
-
-        <div class="chat-section" id="randomChats">
-            <h4>Предлагаемые чаты</h4>
-            <div id="randomContainer"></div>
-        </div>
+    <div id="auth">
+      <b>Вход</b><br><br>
+      <input id="nick" placeholder="Ник"><br><br>
+      <input id="pass" type="password" placeholder="Пароль"><br><br>
+      <button id="login">Войти</button>
+      <button id="register">Регистрация</button>
     </div>
 
-    <div id="chatPanel">
-        <div id="chatHeader">Выберите чат</div>
-        <div id="messages"></div>
-        <div id="sendPanel">
-            <textarea id="textInput" placeholder="Введите сообщение"></textarea>
-            <input type="file" id="fileInput">
-            <button onclick="sendMessage()">Отправить</button>
-        </div>
+    <div id="chats" style="display:none">
+      <b>Чаты</b><br><br>
+      <ul id="chat-list"></ul>
+      <input id="group-name" placeholder="Название группы">
+      <button id="create-group">Создать</button>
     </div>
+
+  </div>
+
+  <div id="content">
+    <div id="messages"></div>
+
+    <div id="send" style="display:none">
+      <textarea id="text"></textarea>
+      <div id="tools">
+        <button id="send-text">Отправить</button>
+        <input type="file" id="img" accept="image/*">
+        <button id="send-img">Картинка</button>
+        <input type="file" id="aud" accept="audio/*">
+        <button id="send-aud">Аудио</button>
+      </div>
+    </div>
+
+    <div id="status"></div>
+  </div>
 </div>
 
 <script>
-let currentChatId = null;
-let joinedChats = [];
-let randomChats = [];
-let accountName = 'Гость';
+const $=id=>document.getElementById(id);
 
-// --- Инициализация ---
-window.onload = async function() {
-    await loginPrompt();
-    await loadChats();
-    updateAccountDisplay();
-    setInterval(updateMessages, 5000);
+const API={
+  login:'/login',
+  register:'/register',
+  logout:'/logout',
+  profile:'/profile',
+  groups:'/groups',
+  createGroup:'/groups/create',
+  deleteGroup:'/groups/delete',
+  getText:'/get-text',
+  sendText:'/save-text',
+  editMsg:'/edit-messege',
+  delMsg:'/delete-messege',
+  img:'/upload-image',
+  aud:'/upload-voice'
+};
+
+let currentGroup=null;
+let myNick=null;
+
+/* ===== AUTH ===== */
+async function auth(url){
+  const r=await fetch(url,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({nickname:$('nick').value,password:$('pass').value})
+  });
+  if(!r.ok)return status(r);
+  init();
+}
+$('login').onclick=()=>auth(API.login);
+$('register').onclick=()=>auth(API.register);
+$('logout').onclick=async()=>{await fetch(API.logout,{method:'POST'});location.reload();};
+
+async function init(){
+  const r=await fetch(API.profile);
+  if(!r.ok)return;
+  const p=await r.json();
+  myNick=p.nickname;
+  $('auth').style.display='none';
+  $('chats').style.display='block';
+  $('profile').style.display='flex';
+  $('nickname').textContent=p.nickname;
+  $('avatar').src=p.avatar||'';
+  loadGroups();
 }
 
-// --- Логин / регистрация ---
-async function loginPrompt() {
-    let nick = prompt("Введите ник:");
-    let pass = prompt("Введите пароль:");
-    const res = await fetch('/login', {
-        method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({nickname:nick,password:pass})
-    });
-    if(res.ok){
-        accountName = nick;
-    } else {
-        if(confirm("Пользователь не найден. Создать новый?")){
-            const r = await fetch('/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nickname:nick,password:pass})});
-            if(r.ok) accountName = nick;
-            else alert(await r.text());
-        } else loginPrompt();
-    }
-    updateAccountDisplay();
+/* ===== GROUPS ===== */
+async function loadGroups(){
+  const r=await fetch(API.groups);
+  if(!r.ok)return status(r);
+  const g=await r.json();
+  $('chat-list').innerHTML='';
+  g.forEach(c=>{
+    const li=document.createElement('li');
+    li.innerHTML=`
+      <div>${c.name}</div>
+      <div class="chat-id">id: ${c.id}</div>
+      ${c.author===myNick?`
+      <div class="chat-actions">
+        <span onclick="deleteGroup(${c.id})">удалить</span>
+      </div>`:''}
+    `;
+    li.onclick=()=>openChat(c.id,li);
+    $('chat-list').appendChild(li);
+  });
 }
 
-// --- Обновление отображения аккаунта ---
-function updateAccountDisplay(){ document.getElementById('accountName').textContent = accountName; }
-function editAccount(){
-    const newNick = prompt('Введите новый ник:', accountName);
-    if(!newNick) return;
-    fetch('/account/edit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nickname:newNick})})
-    .then(r=>{ if(r.ok){ accountName=newNick; updateAccountDisplay(); alert('Ник изменён'); } else alert('Ошибка'); });
+window.deleteGroup=async(id)=>{
+  if(!confirm('Удалить группу?'))return;
+  const r=await fetch(API.deleteGroup,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({id})
+  });
+  if(!r.ok)return status(r);
+  currentGroup=null;
+  $('messages').innerHTML='';
+  $('send').style.display='none';
+  loadGroups();
+};
+
+$('create-group').onclick=async()=>{
+  const name=$('group-name').value.trim();
+  if(!name)return;
+  const r=await fetch(API.createGroup,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({name})
+  });
+  if(!r.ok)return status(r);
+  $('group-name').value='';
+  loadGroups();
+};
+
+async function openChat(id,li){
+  currentGroup=id;
+  [...$('chat-list').children].forEach(x=>x.classList.remove('active'));
+  li.classList.add('active');
+  $('send').style.display='block';
+  loadMessages();
 }
 
-// --- Загрузка чатов ---
-async function loadChats(){
-    const resJoined = await fetch('/chats/joined'); joinedChats = await resJoined.json();
-    const resRandom = await fetch('/chats/random'); randomChats = await resRandom.json();
-    renderChats();
+/* ===== MESSAGES ===== */
+async function loadMessages(){
+  const r=await fetch(API.getText+'?groupId='+currentGroup);
+  if(!r.ok)return status(r);
+  const m=await r.json();
+  $('messages').innerHTML='';
+  m.forEach(msg=>{
+    const d=document.createElement('div');
+    d.className='message';
+    d.innerHTML=`
+      <span class="author">${msg.author}</span>
+      <span class="time">${msg.time||''}</span>
+      ${msg.edited?'<span class="edited">(изменено)</span>':''}
+      ${msg.author===myNick?`
+      <span class="msg-actions">
+        <span onclick="editMsg(${msg.id},\`${msg.content}\`)">✎</span>
+        <span onclick="deleteMsg(${msg.id})">✖</span>
+      </span>`:''}
+      <div>${render(msg)}</div>
+    `;
+    $('messages').appendChild(d);
+  });
+  $('messages').scrollTop=1e9;
 }
 
-// --- Рендер чатов ---
-function renderChats(){
-    const joinedContainer = document.getElementById('joinedContainer');
-    const randomContainer = document.getElementById('randomContainer');
-    joinedContainer.innerHTML=''; randomContainer.innerHTML='';
-    joinedChats.forEach(c=>joinedContainer.appendChild(createChatCard(c)));
-    randomChats.forEach(c=>randomContainer.appendChild(createChatCard(c,true)));
+function render(m){
+  if(m.type==='image')return`<img src="${m.content}" width="220">`;
+  if(m.type==='voice')return`<audio controls src="${m.content}"></audio>`;
+  return m.content;
 }
 
-function createChatCard(chat, joinable=false){
-    const div = document.createElement('div'); div.className='chat-card'; div.dataset.id=chat.id;
-    div.innerHTML=`<span class="chat-name">${chat.name}</span> <span class="chat-members">(${chat.members.length})</span>`;
-    div.onclick=()=>{ if(joinable) joinChat(chat.id); else selectChat(chat.id); }
-    return div;
-}
+window.editMsg=async(id,old)=>{
+  const text=prompt('Редактировать сообщение',old);
+  if(text===null)return;
+  const r=await fetch(API.editMsg,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({id,text})
+  });
+  if(!r.ok)return status(r);
+  loadMessages();
+};
 
-// --- Создание чата ---
-async function createChat(){
-    const name = document.getElementById('newChatName').value.trim();
-    const pass = document.getElementById('newChatPassword').value.trim();
-    if(!name) return alert('Введите название чата');
-    const res = await fetch('/chat/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,password:pass})});
-    if(res.ok){ alert('Чат создан'); document.getElementById('newChatName').value=''; document.getElementById('newChatPassword').value=''; await loadChats(); }
-    else alert(await res.text());
-}
+window.deleteMsg=async(id)=>{
+  if(!confirm('Удалить сообщение?'))return;
+  const r=await fetch(API.delMsg,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({id})
+  });
+  if(!r.ok)return status(r);
+  loadMessages();
+};
 
-// --- Присоединиться к чату ---
-async function joinChat(chatId){
-    const pass = prompt("Пароль для чата (если есть):","");
-    await fetch('/chat/join',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chatId,password:pass})});
-    await loadChats();
-}
+/* ===== SEND ===== */
+$('send-text').onclick=async()=>{
+  const t=$('text').value.trim();
+  if(!t)return;
+  const r=await fetch(API.sendText,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({groupId:currentGroup,text:t})
+  });
+  if(!r.ok)return status(r);
+  $('text').value='';
+  loadMessages();
+};
 
-// --- Выбор чата ---
-function selectChat(chatId){ currentChatId=chatId; const chat=joinedChats.find(c=>c.id==chatId); document.getElementById('chatHeader').textContent=chat.name; updateMessages(); }
+$('send-img').onclick=async()=>{
+  if(!$('img').files.length)return;
+  const f=new FormData();
+  f.append('image',$('img').files[0]);
+  f.append('groupId',currentGroup);
+  const r=await fetch(API.img,{method:'POST',body:f});
+  if(!r.ok)return status(r);
+  $('img').value='';
+  loadMessages();
+};
 
-// --- Фильтр поиска ---
-function filterChats(){
-    const query=document.getElementById('searchChat').value.toLowerCase();
-    [...document.querySelectorAll('.chat-card')].forEach(card=>{
-        const name=card.querySelector('.chat-name').textContent.toLowerCase();
-        const id=card.dataset.id.toLowerCase();
-        card.style.display=(name.includes(query)||id.includes(query))?'flex':'none';
-    });
-}
+$('send-aud').onclick=async()=>{
+  if(!$('aud').files.length)return;
+  const f=new FormData();
+  f.append('voice',$('aud').files[0]);
+  f.append('groupId',currentGroup);
+  const r=await fetch(API.aud,{method:'POST',body:f});
+  if(!r.ok)return status(r);
+  $('aud').value='';
+  loadMessages();
+};
 
-// --- Отправка сообщений ---
-async function sendMessage(){
-    if(!currentChatId) return alert('Выберите чат');
-    const text=document.getElementById('textInput').value;
-    const file=document.getElementById('fileInput').files[0];
-    const formData=new FormData();
-    if(text) formData.append('text',text);
-    if(file) formData.append('file',file);
-    await fetch(`/chat/${currentChatId}/message`,{method:'POST',body:formData});
-    document.getElementById('textInput').value=''; document.getElementById('fileInput').value='';
-    updateMessages();
-}
+function status(r){ $('status').textContent='Ошибка '+r.status; }
 
-// --- Обновление сообщений ---
-async function updateMessages(){
-    if(!currentChatId) return;
-    const res=await fetch(`/chat/${currentChatId}/messages`);
-    const messages=await res.json();
-    const container=document.getElementById('messages'); container.innerHTML='';
-    messages.forEach(m=>{
-        const div=document.createElement('div'); div.className='message';
-        if(m.type=='text') div.innerHTML=`<span class="message-author">${m.author}:</span> ${m.content}`;
-        if(m.type=='image') div.innerHTML=`<span class="message-author">${m.author}:</span> <img src="${m.content}" style="max-width:150px">`;
-        if(m.type=='voice') div.innerHTML=`<span class="message-author">${m.author}:</span> <audio controls src="${m.content}"></audio>`;
-        container.appendChild(div);
-    });
-}
-
-// --- Главная ---
-function goHome(){ document.getElementById('chatHeader').textContent='Выберите чат'; currentChatId=null; }
+init();
 </script>
 
 </body>
