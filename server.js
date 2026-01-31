@@ -783,6 +783,59 @@ app.post('/groups/:groupId/delete', authMiddleware, (req, res) => {
     res.send('Группа удалена.');
 });
 
+// Присоединение к группе по ID (для обычных пользователей)
+app.post('/groups/:groupId/join', authMiddleware, (req, res) => {
+  const { groupId } = req.params;
+  const { nickname } = req.user;
+  
+  let groups = readGroups();
+  const groupIndex = groups.findIndex(g => g.id === groupId);
+  
+  if (groupIndex === -1) {
+    return res.status(404).send('Группа не найдена.');
+  }
+  
+  if (groups[groupIndex].members.includes(nickname)) {
+    return res.status(400).send('Вы уже в группе.');
+  }
+  
+  groups[groupIndex].members.push(nickname);
+  writeGroups(groups);
+  
+  // Добавляем группу пользователю
+  let users = readUsers();
+  const userIndex = users.findIndex(u => u.nickname === nickname);
+  if (userIndex !== -1) {
+    if (!users[userIndex].groups) users[userIndex].groups = [];
+    users[userIndex].groups.push(groupId);
+    writeUsers(users);
+  }
+  
+  const message = {
+    id: uuidv4(),
+    type: 'system',
+    content: `${nickname} присоединился к группе`,
+    timestamp: Date.now()
+  };
+  appendMessage(message, groupId);
+  
+  res.json({ message: 'Вы присоединились к группе.' });
+});
+
+// Получение участников группы (упрощенный эндпоинт)
+app.get('/groups/:groupId/members', authMiddleware, (req, res) => {
+  const { groupId } = req.params;
+  const { nickname } = req.user;
+  
+  let groups = readGroups();
+  const group = groups.find(g => g.id === groupId);
+  
+  if (!group) return res.status(404).send('Группа не найдена.');
+  if (!group.members.includes(nickname)) return res.status(403).send('Нет доступа.');
+  
+  res.json(group.members.map(m => ({ nickname: m })));
+});
+
 // ==================== АДМИН-ПАНЕЛЬ ====================
 
 // Проверка пароля для доступа к админ-панели
