@@ -434,13 +434,13 @@ function openChat(id,li){
 }
 
 /* MESSAGES */
-let wasAtBottom = false;
-
 async function loadMessages(){
-  const wasScrolledToBottom = $('messages').scrollTop + $('messages').clientHeight >= $('messages').scrollHeight - 50;
+  const messagesEl = $('messages');
+  const wasAtBottom = messagesEl.scrollTop + messagesEl.clientHeight >= messagesEl.scrollHeight - 100;
+  const prevScrollHeight = messagesEl.scrollHeight;
   
   const r = await fetch(API.getText+'?groupId='+currentGroup);
-  if(!r.ok) return status(r);
+  if(!r.ok){ status(r); return; }
   
   const m = await r.json(); 
   $('messages').innerHTML = '';
@@ -456,18 +456,21 @@ async function loadMessages(){
       ${msg.author===myNick?`
       <span class="msg-actions">
         <span onclick="editMsg('${msg.id}','${msg.content||''}')" title="Редактировать">✎</span>
-        <span onclick="delMsg('${msg.id}')" title="Удалить">✖</span>
+        <span onclick="delMsg('${msg.id}')" title="Удалить">🗑</span>
       </span>`:''}
       <div>${render(msg)}</div>`;
     $('messages').appendChild(d);
   });
   
-  if (wasScrolledToBottom) {
-    $('messages').scrollTop = 1e9;
+  // ✅ ВОЗВРАЩАЕМ прокрутку
+  if (wasAtBottom) {
+    messagesEl.scrollTop = messagesEl.scrollHeight; // вниз
   } else {
-    $('messages').scrollTop = $('messages').scrollHeight - $('messages').clientHeight;
+    // сохраняем позицию относительно низа
+    const scrollDiff = prevScrollHeight - messagesEl.scrollHeight;
+    messagesEl.scrollTop = Math.max(0, messagesEl.scrollTop + scrollDiff);
   }
-}
+  }
 
 function render(m){
   if(m.type==='image')return `<img src="${m.content}" width="220" style="border-radius:8px">`;
@@ -646,7 +649,6 @@ $('leave-group').onclick = async () => {
   const r = await fetch(`/groups/${currentGroup}/leave`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({})
   });
   
   if (r.ok) {
@@ -677,7 +679,7 @@ function status(r) {
   let errorMsg = 'Неизвестная ошибка';
   
   if (r && r.status) {
-    errorMsg = r.statusText || `${r.status}`;
+    errorMsg = r.statusText || `${r.status} ${r.statusText}`;
     // Показываем ТОЧНО ТО, что сервер вернул
     fetch(r.url, {method: 'GET'})
       .then(resp => resp.text())
