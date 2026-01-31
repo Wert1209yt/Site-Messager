@@ -207,7 +207,20 @@ input,textarea{
 #join-group{margin-top:10px}
 #join-group input{width:100%;margin-bottom:8px}
 
-#status{padding:4px 8px;color:#a00000;font-size:13px}
+#status {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+  background: linear-gradient(#dc3545, #c82333); color: white;
+  padding: 12px 20px; font-size: 16px; font-weight: bold;
+  border-bottom: 3px solid #a71e2a; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  transform: translateY(-100%); transition: transform 0.3s ease;
+  display: none; /* Скрыт по умолчанию */
+}
+
+#leave-group {
+  background: linear-gradient(#dc3545, #c82333) !important;
+  border-color: #bd2130 !important;
+  margin-top: 8px;
+}
 </style>
 </head>
 
@@ -222,7 +235,7 @@ input,textarea{
 <div id="profile-menu">
   <b>Изменить данные</b><br><br>
   <input id="edit-nick" placeholder="Новый ник"><br>
-  <input id="old-pass" type="password" placeholder="Старый пароль"><br>
+  <input id="old-pass" type="password" placeholder="Текущий пароль" required><br>
   <input id="new-pass" type="password" placeholder="Новый пароль"><br>
   <input id="confirm-pass" type="password" placeholder="Подтвердить новый пароль"><br>
   <button id="save-profile">Сохранить</button><br><br>
@@ -253,6 +266,8 @@ input,textarea{
         <input id="edit-group-name" placeholder="Новое название"><br>
         <button id="update-group">Сохранить название</button><br>
         <button id="show-members">Участники</button>
+        <button id="leave-group" style="background: linear-gradient(#dc3545, #c82333);
+          ">Выйти из группы</button>
       </div>
 
       <div id="members-modal">
@@ -382,7 +397,7 @@ async function loadGroups(){
     const li=document.createElement('li');
     li.innerHTML=`<div>${c.name}</div><div class="chat-id">id: ${c.id}</div>
     ${c.creator===myNick?`<div class="chat-actions">
-    <span onclick="delGroup('${c.id}')">❌ удалить</span></div>`:''}`;
+    <span onclick="delGroup('${c.id}')">✖️ удалить</span></div>`:''}`;
     li.onclick=()=>openChat(c.id,li);
     $('chat-list').appendChild(li);
   });
@@ -406,12 +421,16 @@ function openChat(id,li){
   [...$('chat-list').children].forEach(x=>x.classList.remove('active'));
   li.classList.add('active');
   $('send').style.display='block';
-  $('group-actions').style.display=li.querySelector('.chat-actions')?'block':'none';
+
+  const isCreator = li.querySelector('.chat-actions') !== null;
+  $('group-actions').style.display = isCreator ? 'block' : 'none';
+  
+
+  $('leave-group').style.display = isCreator ? 'none' : 'block';
   $('edit-group-name').value=li.querySelector('div').textContent.trim();
   
   loadMessages();
   
-  // 🔄 АВТООБНОВЛЕНИЕ каждые 3 секунды
   messageInterval = setInterval(loadMessages, 3000);
 }
 
@@ -430,7 +449,7 @@ async function loadMessages(){
       ${msg.author===myNick?`
       <span class="msg-actions">
         <span onclick="editMsg('${msg.id}',\`${msg.content||''}\`)" title="Редактировать">✎</span>
-        <span onclick="delMsg('${msg.id}')" title="Удалить">🗑</span>
+        <span onclick="delMsg('${msg.id}')" title="Удалить">✖</span>
       </span>`:''}
       <div>${render(msg)}</div>`;
     $('messages').appendChild(d);
@@ -603,8 +622,31 @@ $('join-btn').onclick=async()=>{
   if(r.ok){
     loadGroups();
     $('join-id').value='';
-    status({status:'✅ Присоединились к группе'});
+    status({status:'✔ Присоединились к группе'});
   }else status(r);
+};
+
+$('leave-group').onclick = async () => {
+  if (!currentGroup) return status({ status: 'Группа не выбрана' });
+  
+  if (!confirm(`Выйти из группы "${currentLi?.querySelector('div')?.textContent}"?`)) return;
+  
+  const r = await fetch(`/groups/${currentGroup}/leave`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({})
+  });
+  
+  if (r.ok) {
+    status({ status: '✔ Вы покинули группу' });
+    loadGroups(); 
+    $('messages').innerHTML = ''; 
+    $('send').style.display = 'none';
+    currentGroup = null;
+    $('group-actions').style.display = 'none';
+  } else {
+    status(r);
+  }
 };
 
 /* EVENT HANDLERS */
@@ -619,11 +661,44 @@ document.addEventListener('click',e=>{
 });
 
 /* STATUS */
-function status(r){
-  const msg=r.status?r.status+' '+r.statusText:r.status||'Ошибка';
-  $('status').textContent=msg;
-  setTimeout(()=>$('status').textContent='',3e3);
-}
+function status(r) {
+  let errorMsg = 'Неизвестная ошибка';
+  
+  // Получаем ПОЛНЫЙ ТЕКСТ с сервера
+  if (r.status) {
+    try {
+      // Если сервер вернул JSON с описанием
+      const errorData = await r.clone().json();
+      errorMsg = errorData.error || errorData.message || `${r.status} ${r.statusText}`;
+    } catch {
+      // Если обычный текст ответа
+      errorMsg = `${r.status} ${r.statusText}: ${await r.clone().text()}`;
+    }
+  } else {
+    errorMsg = r.status || r || 'Ошибка соединения';
+  }
+  
+  // Показываем красную плашку СВЕРХУ
+  const statusEl = $('status');
+  statusEl.style.cssText = `
+    position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+    background: linear-gradient(#dc3545, #c82333); color: white;
+    padding: 12px 20px; font-size: 16px; font-weight: bold;
+    border-bottom: 3px solid #a71e2a; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transform: translateY(-100%); transition: transform 0.3s ease;
+  `;
+  statusEl.textContent = errorMsg;
+  
+  // АНИМАЦИЯ: спускаем плашку вниз
+  setTimeout(() => statusEl.style.transform = 'translateY(0)', 100);
+  
+  // СКРЫВАЕМ через 5 секунд
+  setTimeout(() => {
+    statusEl.style.transform = 'translateY(-100%)';
+    setTimeout(() => statusEl.textContent = '', 300);
+  }, 5000);
+  }
+  
 
 window.onbeforeunload = () => {
   if(messageInterval) clearInterval(messageInterval);
