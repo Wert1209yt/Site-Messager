@@ -266,8 +266,7 @@ input,textarea{
         <input id="edit-group-name" placeholder="Новое название"><br>
         <button id="update-group">Сохранить название</button><br>
         <button id="show-members">Участники</button>
-        <button id="leave-group" style="background: linear-gradient(#dc3545, #c82333);
-          ">Выйти из группы</button>
+        <button id="leave-group" style="background:linear-gradient(#dc3545,#c82333)!important;border-color:#bd2130!important;width:100%;padding:12px">Выйти из группы</button>
       </div>
 
       <div id="members-modal">
@@ -435,26 +434,39 @@ function openChat(id,li){
 }
 
 /* MESSAGES */
+let wasAtBottom = false;
+
 async function loadMessages(){
-  const r=await fetch(API.getText+'?groupId='+currentGroup);
-  if(!r.ok)return status(r);
-  const m=await r.json(); $('messages').innerHTML='';
-  m.forEach(msg=>{
-    const d=document.createElement('div'); d.className='message';
-    const time=new Date(msg.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-    d.innerHTML=`
+  const wasScrolledToBottom = $('messages').scrollTop + $('messages').clientHeight >= $('messages').scrollHeight - 50;
+  
+  const r = await fetch(API.getText+'?groupId='+currentGroup);
+  if(!r.ok) return status(r);
+  
+  const m = await r.json(); 
+  $('messages').innerHTML = '';
+  
+  m.forEach(msg => {
+    const d = document.createElement('div'); 
+    d.className = 'message';
+    const time = new Date(msg.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    d.innerHTML = `
       <span class="author">${msg.author}</span>
       <span class="time">${time}</span>
       ${msg.edited?'<span class="edited">(изменено)</span>':''}
       ${msg.author===myNick?`
       <span class="msg-actions">
-        <span onclick="editMsg('${msg.id}',\`${msg.content||''}\`)" title="Редактировать">✎</span>
+        <span onclick="editMsg('${msg.id}','${msg.content||''}')" title="Редактировать">✎</span>
         <span onclick="delMsg('${msg.id}')" title="Удалить">✖</span>
       </span>`:''}
       <div>${render(msg)}</div>`;
     $('messages').appendChild(d);
   });
-  $('messages').scrollTop=1e9;
+  
+  if (wasScrolledToBottom) {
+    $('messages').scrollTop = 1e9;
+  } else {
+    $('messages').scrollTop = $('messages').scrollHeight - $('messages').clientHeight;
+  }
 }
 
 function render(m){
@@ -661,53 +673,37 @@ document.addEventListener('click',e=>{
 });
 
 /* STATUS */
-async function status(r) {
+function status(r) {
   let errorMsg = 'Неизвестная ошибка';
   
-  try {
-    if (r && typeof r === 'object' && r.status) {
-      // Пробуем получить JSON
-      const contentType = r.headers?.get('content-type');
-      
-      if (contentType && contentType.includes('application/json')) {
-        const errorData = await r.json();
-        errorMsg = errorData.error || errorData.message || errorData || `${r.status}`;
-      } else {
-        // Обычный текст от сервера
-        const text = await r.text();
-        errorMsg = text || `${r.status} ${r.statusText || ''}`;
-      }
-    } else {
-      errorMsg = r?.status || r || 'Нет соединения';
-    }
-  } catch (e) {
-    errorMsg = `${r?.status || 'Ошибка'} - ${e.message}`;
+  if (r && r.status) {
+    errorMsg = r.statusText || `${r.status}`;
+    // Показываем ТОЧНО ТО, что сервер вернул
+    fetch(r.url, {method: 'GET'})
+      .then(resp => resp.text())
+      .then(text => {
+        $('status').textContent = `✖ ${text || errorMsg}`;
+        showStatus();
+      })
+      .catch(() => {
+        $('status').textContent = `✖ ${errorMsg}`;
+        showStatus();
+      });
+  } else {
+    $('status').textContent = `✖ ${r || 'Нет соединения'}`;
+    showStatus();
   }
-  
-  // 🔥 КРАСНАЯ ПЛАШКА СВЕРХУ
+}
+
+function showStatus() {
   const statusEl = $('status');
-  statusEl.innerHTML = `❌ <strong>${errorMsg}</strong>`;
-  statusEl.style.cssText = `
-    position: fixed; top: 0; left: 0; right: 0; z-index: 10000;
-    background: linear-gradient(135deg, #dc3545, #c82333); 
-    color: white; padding: 15px 20px; font-size: 16px; font-weight: 500;
-    border-bottom: 3px solid #a71e2a; box-shadow: 0 4px 20px rgba(220,53,69,0.4);
-    transform: translateY(-100%); transition: all 0.4s cubic-bezier(0.25,0.46,0.45,0.94);
-    backdrop-filter: blur(10px);
-  `;
+  statusEl.style.display = 'block';
+  statusEl.style.transform = 'translateY(0)';
   
-  // АНИМАЦИЯ: показываем
-  requestAnimationFrame(() => {
-    statusEl.style.transform = 'translateY(0)';
-  });
-  
-  // СКРЫВАЕМ через 6 секунд
   setTimeout(() => {
     statusEl.style.transform = 'translateY(-100%)';
-    setTimeout(() => {
-      statusEl.style.display = 'none';
-    }, 400);
-  }, 6000);
+    setTimeout(() => statusEl.style.display = 'none', 400);
+  }, 5000);
 }
 
 window.onbeforeunload = () => {
