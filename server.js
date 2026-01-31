@@ -917,9 +917,6 @@ app.post('/admin/delete-group', (req, res) => {
 
     let groups = readGroups();
     const groupIndex = groups.findIndex(g => g.id === groupId);
-        let groups = readGroups();
-    const groupIndex = groups.findIndex(g => g.id === groupId);
-
     if (groupIndex === -1) {
         return res.status(404).send('Группа не найдена.');
     }
