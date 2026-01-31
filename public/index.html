@@ -395,13 +395,20 @@ window.delGroup=async(id)=>{
 };
 
 function openChat(id,li){
+  // 🛑 Останавливаем предыдущий интервал
+  if(messageInterval) clearInterval(messageInterval);
+  
   currentGroup=id; currentLi=li;
   [...$('chat-list').children].forEach(x=>x.classList.remove('active'));
   li.classList.add('active');
   $('send').style.display='block';
   $('group-actions').style.display=li.querySelector('.chat-actions')?'block':'none';
   $('edit-group-name').value=li.querySelector('div').textContent.trim();
+  
   loadMessages();
+  
+  // 🔄 АВТООБНОВЛЕНИЕ каждые 3 секунды
+  messageInterval = setInterval(loadMessages, 3000);
 }
 
 /* MESSAGES */
@@ -613,6 +620,10 @@ function status(r){
   $('status').textContent=msg;
   setTimeout(()=>$('status').textContent='',3e3);
 }
+
+window.onbeforeunload = () => {
+  if(messageInterval) clearInterval(messageInterval);
+};
 </script>
 
 </body>
