@@ -360,6 +360,8 @@ async function init(){
 }
 
 /* GROUPS */
+let messageInterval = null;
+
 $('open-group-menu').onclick=()=>$('group-menu').style.display=
   $('group-menu').style.display==='block'?'none':'block';
 
@@ -386,6 +388,7 @@ async function loadGroups(){
 }
 
 window.delGroup=async(id)=>{
+  if(messageInterval) clearInterval(messageInterval);
   if(!confirm('Удалить группу?'))return;
   const r=await fetch(`/groups/${id}/delete`,{method:'POST',headers:{'Content-Type':'application/json'},
   body:JSON.stringify({})});
