@@ -5,120 +5,125 @@
 <title>Messenger</title>
 
 <style>
-/* ===== БАЗА (ФОРУМ 2010–2014) ===== */
+*{box-sizing:border-box}
 body{
   margin:0;
-  font-family:Tahoma, Arial, sans-serif;
-  background:#d7dbea;
-  color:#000;
+  font-family:Tahoma,Arial,sans-serif;
+  background:linear-gradient(#e4e8f2,#cfd7e6);
+  color:#222;
 }
-a{color:#1a3dc1;text-decoration:none}
-a:hover{text-decoration:underline}
+
+/* ===== КНОПКИ ===== */
 button{
-  font-family:inherit;
-  background:#4f64c8;
-  border:1px solid #2f3f91;
+  background:linear-gradient(#5c73d9,#3c4fb3);
+  border:1px solid #2c3b8f;
   color:#fff;
-  padding:4px 10px;
-  cursor:pointer;
-}
-button:hover{background:#3e52ad}
-input, textarea{
-  font-family:inherit;
-  border:1px solid #777;
-  padding:4px;
-}
-.hidden{display:none}
-
-/* ===== ВЕРХНЕЕ МЕНЮ ===== */
-#topbar{
-  background:#c7cde4;
-  border-bottom:1px solid #8e96b8;
   padding:6px 10px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-#topbar span{font-weight:bold}
-
-/* ===== ОСНОВНАЯ СЕТКА ===== */
-#wrapper{
-  display:flex;
-  height:calc(100vh - 34px);
-}
-#left{
-  width:260px;
-  background:#eef1fb;
-  border-right:1px solid #9aa3c4;
-  padding:8px;
-  box-sizing:border-box;
-}
-#right{
-  flex:1;
-  display:flex;
-  flex-direction:column;
-}
-
-/* ===== СПИСОК ГРУПП ===== */
-#groups{
-  list-style:none;
-  padding:0;
-  margin:0;
-}
-#groups li{
-  padding:4px;
-  border-bottom:1px dotted #aaa;
   cursor:pointer;
 }
-#groups li small{
-  display:block;
-  color:#666;
-  font-size:11px;
+button:hover{filter:brightness(1.1)}
+button.icon{
+  width:36px;
+  padding:6px;
+  font-weight:bold;
+}
+button.send::before{content:"➤";}
+button.clip::before{content:"⎘";}
+button.recording{
+  background:linear-gradient(#b94a48,#8b1e1e);
+  border-color:#6d1616;
 }
 
-/* ===== СООБЩЕНИЯ ===== */
+/* ===== INPUT ===== */
+input,textarea{
+  border:1px solid #777;
+  padding:6px;
+  font-family:inherit;
+}
+
+/* ===== TOP ===== */
+#topbar{
+  height:44px;
+  background:linear-gradient(#444,#2b2b2b);
+  color:#fff;
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  padding:0 10px;
+}
+#profile{display:flex;align-items:center;gap:8px}
+/* аватар удалён */
+#nickname{font-weight:bold;}
+
+/* ===== LAYOUT ===== */
+#wrapper{display:flex;height:calc(100vh - 44px)}
+#sidebar{
+  width:260px;
+  background:linear-gradient(#f8f9fd,#dbe2f3);
+  border-right:1px solid #9aa3b7;
+  padding:8px;
+}
+#content{flex:1;display:flex;flex-direction:column}
+
+/* ===== LEFT INFO ===== */
+#left-info{
+  background:#fff;
+  border:1px solid #9aa3b7;
+  padding:6px;
+  font-size:12px;
+  margin-top:10px;
+}
+
+/* ===== AUTH ===== */
+#auth{
+  background:#fff;
+  border:1px solid #9aa3b7;
+  padding:8px;
+}
+
+/* ===== GROUPS ===== */
+#chat-list{list-style:none;padding:0;margin:0}
+#chat-list li{
+  background:linear-gradient(#fff,#e7ebf7);
+  border:1px solid #9aa3b7;
+  margin-bottom:6px;
+  padding:6px;
+  cursor:pointer;
+}
+#chat-list li.active{
+  background:linear-gradient(#d6e0ff,#b9c8ff);
+}
+.chat-id{font-size:11px;color:#555}
+.chat-actions span{
+  font-size:12px;
+  color:#3c4fb3;
+  cursor:pointer;
+}
+
+/* ===== MESSAGES ===== */
 #messages{
   flex:1;
   background:#fff;
-  padding:10px;
+  border-bottom:1px solid #9aa3b7;
   overflow-y:auto;
+  padding:10px;
 }
 .message{
+  margin-bottom:10px;
+  padding-bottom:4px;
   border-bottom:1px dotted #ccc;
-  padding-bottom:6px;
-  margin-bottom:6px;
 }
-.author{font-weight:bold;color:#243a9a}
-.edited{font-size:11px;color:#666;margin-left:6px}
-.actions{
-  float:right;
-  font-size:12px;
-}
-.actions button{
-  background:none;
-  border:none;
-  color:#243a9a;
-  padding:0 4px;
+.author{font-weight:bold;color:#2c3b8f}
+.time{font-size:11px;color:#666;margin-left:6px}
+.edited{font-size:11px;color:#999;margin-left:6px}
+.msg-actions{float:right;font-size:12px}
+.msg-actions span{
+  cursor:pointer;
+  color:#3c4fb3;
+  margin-left:6px;
 }
 
-/* ===== ВВОД ===== */
-#send{
-  border-top:1px solid #9aa3c4;
-  background:#dde2f4;
-  padding:6px;
-}
-#send textarea{
-  width:100%;
-  height:60px;
-  box-sizing:border-box;
-}
-#sendbar{
-  margin-top:4px;
-  display:flex;
-  justify-content:space-between;
-}
-
-/* ===== АУДИО ===== */
+/* ===== AUDIO PLAYER ===== */
 .audio{
   display:flex;
   align-items:center;
@@ -126,257 +131,251 @@ input, textarea{
 }
 .audio button{
   width:28px;
-  padding:2px 0;
+  height:28px;
+  padding:0;
+}
+.audio .bar{
+  flex:1;
+  height:6px;
+  background:#cfd7e6;
+  position:relative;
+}
+.audio .bar span{
+  position:absolute;
+  height:100%;
+  background:#3c4fb3;
+  width:0%;
 }
 
-/* ===== НИЗ ===== */
-#bottom{
-  font-size:12px;
-  background:#c7cde4;
-  border-top:1px solid #8e96b8;
-  padding:4px 8px;
+/* ===== SEND ===== */
+#send{
+  padding:8px;
+  background:linear-gradient(#eef2fb,#d9e0f1);
 }
+#send textarea{width:100%;height:60px}
+#tools{margin-top:6px;display:flex;gap:6px}
+
+/* ===== GROUP MENU ===== */
+#group-menu{
+  display:none;
+  background:#fff;
+  border:1px solid #9aa3b7;
+  padding:8px;
+  margin-top:8px;
+}
+
+/* ===== STATUS ===== */
+#status{padding:4px 8px;color:#a00000;font-size:13px}
 </style>
 </head>
 
 <body>
 
 <div id="topbar">
-  <span id="me">Гость</span>
-  <span id="status">не подключён</span>
+  <div id="profile">
+    <span id="nickname"></span>
+  </div>
 </div>
 
 <div id="wrapper">
+  <div id="sidebar">
 
-<!-- ЛЕВО -->
-<div id="left">
+    <div id="auth">
+      <b>Вход</b><br><br>
+      <input id="nick" placeholder="Ник"><br><br>
+      <input id="pass" type="password" placeholder="Пароль"><br><br>
+      <button id="login">Войти</button>
+      <button id="register">Регистрация</button>
+    </div>
 
-<b>Сегодня:</b> <span id="date"></span><br>
-<b>Ping:</b> <span id="ping">–</span> ms
-<hr>
+    <div id="chats" style="display:none">
+      <b>Чаты</b><br><br>
+      <ul id="chat-list"></ul>
 
-<b>Чаты</b>
-<ul id="groups"></ul>
+      <button id="open-group-menu" class="icon">+</button>
+      <div id="group-menu">
+        <input id="group-name" placeholder="Название группы" style="width:100%">
+        <div style="margin-top:10px"></div>
+        <button id="create-group">Создать</button>
+      </div>
 
-<hr>
-<input id="joinId" placeholder="ID группы">
-<button id="joinBtn">Войти</button>
+      <div id="left-info">
+        <div id="date"></div>
+        <div>Ping: <span id="ping">–</span> ms</div>
+      </div>
+    </div>
 
-<br><br>
-<button id="openCreate">Создать группу</button>
-<div id="createBox" class="hidden">
-<br>
-<input id="groupName" placeholder="Название группы"><br><br>
-<button id="createBtn">Создать</button>
-</div>
-
-<div id="adminBox" class="hidden">
-<hr>
-<b>Управление</b><br><br>
-<input id="kickNick" placeholder="Ник"><br><br>
-<button id="kickBtn">Кик</button><br><br>
-<button id="deleteGroup">Удалить группу</button>
-</div>
-
-</div>
-
-<!-- ПРАВО -->
-<div id="right">
-
-<div id="messages"></div>
-
-<div id="send" class="hidden">
-<textarea id="text"></textarea>
-<div id="sendbar">
-  <div>
-    <button id="attach">Скрепка</button>
-    <button id="record">Запись</button>
   </div>
-  <button id="sendBtn">Отправить</button>
-</div>
-<input type="file" id="file" class="hidden">
-</div>
 
-<div id="bottom">
-<span id="bottomInfo"></span>
-</div>
+  <div id="content">
+    <div id="messages"></div>
 
+    <div id="send" style="display:none">
+      <textarea id="text"></textarea>
+      <div id="tools">
+        <input type="file" id="file" accept="image/*,audio/*" hidden>
+        <button class="icon clip" id="pick-file"></button>
+        <button id="record">Запись</button>
+        <button class="icon send" id="send-text"></button>
+      </div>
+    </div>
+
+    <div id="status"></div>
+  </div>
 </div>
 
 <script>
-/* ===== БАЗА ===== */
-const $=i=>document.getElementById(i);
-let myNick=null;
-let currentGroup=null;
-let editId=null;
-let attachFile=null;
-let audioBlob=null;
+const $=id=>document.getElementById(id);
+const API={
+  login:'/login',register:'/register',logout:'/logout',profile:'/profile',
+  groups:'/groups',createGroup:'/groups/create',deleteGroup:'/groups/delete',
+  getText:'/get-text',sendText:'/save-text',
+  edit:'/edit-messege',del:'/delete-messege',
+  img:'/upload-image',aud:'/upload-voice'
+};
 
-/* ===== ДАТА / ПИНГ ===== */
+let currentGroup=null,myNick=null;
+let editingId=null;
+
+/* DATE + PING */
 $('date').textContent=new Date().toLocaleDateString();
 async function ping(){
   const t=performance.now();
   try{await fetch('/');$('ping').textContent=Math.round(performance.now()-t);}
   catch{}
 }
-ping();setInterval(ping,5000);
+setInterval(ping,5000); ping();
 
-/* ===== АВТОВХОД ===== */
-(async()=>{
-  const r=await fetch('/profile');
-  if(!r.ok)return;
-  const p=await r.json();
-  myNick=p.nickname;
-  $('me').textContent=myNick;
-  $('status').textContent='онлайн';
+/* AUTH */
+async function auth(url){
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({nickname:$('nick').value,password:$('pass').value})});
+  if(!r.ok)return status(r);
+  init();
+}
+$('login').onclick=()=>auth(API.login);
+$('register').onclick=()=>auth(API.register);
+
+async function init(){
+  const r=await fetch(API.profile); if(!r.ok)return;
+  const p=await r.json(); myNick=p.nickname;
+  $('auth').style.display='none';
+  $('chats').style.display='block';
+  $('nickname').textContent=p.nickname;
   loadGroups();
-})();
-
-/* ===== ГРУППЫ ===== */
-async function loadGroups(){
-  const r=await fetch('/groups');
-  if(!r.ok)return;
-  const g=await r.json();
-  $('groups').innerHTML='';
-  g.forEach(gr=>{
-    const li=document.createElement('li');
-    li.innerHTML=`${gr.name}<small>${gr.id}</small>`;
-    li.onclick=()=>openGroup(gr);
-    $('groups').appendChild(li);
-  });
 }
 
-function openGroup(gr){
-  currentGroup=gr.id;
-  $('send').classList.remove('hidden');
-  $('adminBox').classList.toggle('hidden',gr.author!==myNick);
+/* GROUPS */
+$('open-group-menu').onclick=()=>$('group-menu').style.display=
+  $('group-menu').style.display==='block'?'none':'block';
+
+$('create-group').onclick=async()=>{
+  const n=$('group-name').value.trim(); if(!n)return;
+  const r=await fetch(API.createGroup,{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({name:n})});
+  if(!r.ok)return status(r);
+  $('group-name').value=''; loadGroups();
+};
+
+async function loadGroups(){
+  const r=await fetch(API.groups); if(!r.ok)return status(r);
+  const g=await r.json(); $('chat-list').innerHTML='';
+  g.forEach(c=>{
+    const li=document.createElement('li');
+    li.innerHTML=`<div>${c.name}</div><div class="chat-id">id: ${c.id}</div>
+    ${c.author===myNick?`<div class="chat-actions">
+    <span onclick="delGroup(${c.id})">удалить</span></div>`:''}`;
+    li.onclick=()=>openChat(c.id,li);
+    $('chat-list').appendChild(li);
+  });
+}
+window.delGroup=async(id)=>{
+  if(!confirm('Удалить группу?'))return;
+  const r=await fetch(API.deleteGroup,{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({id})});
+  if(!r.ok)return status(r);
+  loadGroups(); $('messages').innerHTML=''; $('send').style.display='none';
+};
+
+function openChat(id,li){
+  currentGroup=id;
+  [...$('chat-list').children].forEach(x=>x.classList.remove('active'));
+  li.classList.add('active');
+  $('send').style.display='block';
   loadMessages();
 }
 
-/* ===== СООБЩЕНИЯ ===== */
+/* MESSAGES */
 async function loadMessages(){
-  const r=await fetch('/get-text?groupId='+currentGroup);
-  if(!r.ok)return;
-  const m=await r.json();
-  $('messages').innerHTML='';
+  const r=await fetch(API.getText+'?groupId='+currentGroup);
+  if(!r.ok)return status(r);
+  const m=await r.json(); $('messages').innerHTML='';
   m.forEach(msg=>{
-    const d=document.createElement('div');
-    d.className='message';
+    const d=document.createElement('div'); d.className='message';
     d.innerHTML=`
       <span class="author">${msg.author}</span>
+      <span class="time">${msg.time||''}</span>
       ${msg.edited?'<span class="edited">(изменено)</span>':''}
       ${msg.author===myNick?`
-        <span class="actions">
-          <button onclick="editMsg(${msg.id},\`${msg.content||''}\`)">ред</button>
-          <button onclick="delMsg(${msg.id})">уд</button>
-        </span>`:''}
-      <div>${render(msg)}</div>
-    `;
+      <span class="msg-actions">
+        <span onclick="editMsg(${msg.id},\`${msg.content||''}\`)">ред</span>
+        <span onclick="delMsg(${msg.id})">уд</span>
+      </span>`:''}
+      <div>${render(msg)}</div>`;
     $('messages').appendChild(d);
   });
-  $('messages').scrollTop=$('messages').scrollHeight;
+  $('messages').scrollTop=1e9;
 }
 
-function render(msg){
-  if(msg.type==='image')
-    return `<img src="${msg.url}" style="max-width:300px">`;
-  if(msg.type==='audio')
-    return `<div class="audio">
-      <button onclick="play(this)">▶</button>
-      <audio src="${msg.url}"></audio>
-    </div>`;
-  return msg.content;
+function render(m){
+  if(m.type==='image')return `<img src="${m.content}" width="220">`;
+  if(m.type==='voice')return audio(m.content);
+  return m.content;
 }
 
-function play(b){
-  const a=b.nextElementSibling;
-  a.paused?a.play():a.pause();
+function audio(src){
+  return `<div class="audio">
+    <button onclick="play(this,'${src}')">▶</button>
+    <div class="bar"><span></span></div>
+  </div>`;
 }
 
-/* ===== РЕД / УД ===== */
-window.editMsg=(id,text)=>{
-  editId=id;
-  $('text').value=text;
-};
-window.delMsg=async(id)=>{
-  if(!confirm('Удалить?'))return;
-  await fetch('/delete-messege',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
-  loadMessages();
+window.play=(b,src)=>{
+  const a=new Audio(src);
+  const bar=b.nextElementSibling.firstChild;
+  a.ontimeupdate=()=>bar.style.width=(a.currentTime/a.duration*100)+'%';
+  a.onended=()=>b.textContent='▶';
+  if(b.textContent==='▶'){b.textContent='■';a.play();}
+  else{a.pause();b.textContent='▶';}
 };
 
-/* ===== ОТПРАВКА ===== */
-$('sendBtn').onclick=async()=>{
-  if(editId){
-    await fetch('/edit-messege',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({id:editId,text:$('text').value})});
-    editId=null;
-    $('text').value='';
-    loadMessages();
-    return;
-  }
-  if($('text').value.trim()){
-    await fetch('/save-text',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({groupId:currentGroup,text:$('text').value})});
-  }
-  if(attachFile){
-    const f=new FormData();
-    f.append('file',attachFile);
-    f.append('groupId',currentGroup);
-    await fetch('/upload',{method:'POST',body:f});
-    attachFile=null;
-  }
-  if(audioBlob){
-    const f=new FormData();
-    f.append('file',audioBlob,'record.webm');
-    f.append('groupId',currentGroup);
-    await fetch('/upload',{method:'POST',body:f});
-    audioBlob=null;
-  }
-  $('text').value='';
-  loadMessages();
+/* SEND */
+$('send-text').onclick=async()=>{
+  const t=$('text').value.trim(); if(!t)return;
+  const url=editingId?API.edit:API.sendText;
+  const body=editingId?{id:editingId,text:t}:{groupId:currentGroup,text:t};
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!r.ok)return status(r);
+  editingId=null;
+  $('text').value=''; loadMessages();
 };
 
-/* ===== ФАЙЛ / ЗАПИСЬ ===== */
-$('attach').onclick=()=>$('file').click();
-$('file').onchange=()=>attachFile=$('file').files[0];
+window.editMsg=(id,text)=>{editingId=id;$('text').value=text;$('text').focus()};
+window.delMsg=async id=>{if(!confirm('Удалить сообщение?'))return; await fetch(API.del,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})}); loadMessages();};
 
-let rec=null,chunks=[];
-$('record').onclick=async()=>{
-  if(!rec){
-    const s=await navigator.mediaDevices.getUserMedia({audio:true});
-    rec=new MediaRecorder(s);
-    chunks=[];
-    rec.ondataavailable=e=>chunks.push(e.data);
-    rec.onstop=()=>audioBlob=new Blob(chunks,{type:'audio/webm'});
-    rec.start();
-    $('record').textContent='Стоп';
-  }else{
-    rec.stop();
-    rec=null;
-    $('record').textContent='Запись';
-  }
+/* FILES */
+$('pick-file').onclick=()=>$('file').click();
+$('file').onchange=async()=>{
+  const f=$('file').files[0]; if(!f)return;
+  const fd=new FormData(); fd.append(f.type.startsWith('image')?'image':'voice',f); fd.append('groupId',currentGroup);
+  const url=f.type.startsWith('image')?API.img:API.aud;
+  const r=await fetch(url,{method:'POST',body:fd});
+  if(!r.ok)return status(r);
+  $('file').value=''; loadMessages();
 };
 
-/* ===== СОЗДАНИЕ / КИК ===== */
-$('openCreate').onclick=()=>$('createBox').classList.toggle('hidden');
-$('createBtn').onclick=async()=>{
-  await fetch('/groups/create',{method:'POST',headers:{'Content-Type':'application/json'},
-  body:JSON.stringify({name:$('groupName').value})});
-  loadGroups();
-};
-$('kickBtn').onclick=async()=>{
-  await fetch('/kick-member',{method:'POST',headers:{'Content-Type':'application/json'},
-  body:JSON.stringify({groupId:currentGroup,nickname:$('kickNick').value})});
-};
-$('deleteGroup').onclick=async()=>{
-  if(!confirm('Удалить группу?'))return;
-  await fetch('/groups/delete',{method:'POST',headers:{'Content-Type':'application/json'},
-  body:JSON.stringify({id:currentGroup})});
-  currentGroup=null;
-  $('messages').innerHTML='';
-  $('send').classList.add('hidden');
-  loadGroups();
-};
+/* STATUS */
+function status(r){$('status').textContent='Ошибка '+r.status;}
 </script>
 
 </body>
