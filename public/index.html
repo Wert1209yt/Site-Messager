@@ -661,44 +661,54 @@ document.addEventListener('click',e=>{
 });
 
 /* STATUS */
-function status(r) {
+async function status(r) {
   let errorMsg = 'Неизвестная ошибка';
   
-  // Получаем ПОЛНЫЙ ТЕКСТ с сервера
-  if (r.status) {
-    try {
-      // Если сервер вернул JSON с описанием
-      const errorData = await r.clone().json();
-      errorMsg = errorData.error || errorData.message || `${r.status} ${r.statusText}`;
-    } catch {
-      // Если обычный текст ответа
-      errorMsg = `${r.status} ${r.statusText}: ${await r.clone().text()}`;
+  try {
+    if (r && typeof r === 'object' && r.status) {
+      // Пробуем получить JSON
+      const contentType = r.headers?.get('content-type');
+      
+      if (contentType && contentType.includes('application/json')) {
+        const errorData = await r.json();
+        errorMsg = errorData.error || errorData.message || errorData || `${r.status}`;
+      } else {
+        // Обычный текст от сервера
+        const text = await r.text();
+        errorMsg = text || `${r.status} ${r.statusText || ''}`;
+      }
+    } else {
+      errorMsg = r?.status || r || 'Нет соединения';
     }
-  } else {
-    errorMsg = r.status || r || 'Ошибка соединения';
+  } catch (e) {
+    errorMsg = `${r?.status || 'Ошибка'} - ${e.message}`;
   }
   
-  // Показываем красную плашку СВЕРХУ
+  // 🔥 КРАСНАЯ ПЛАШКА СВЕРХУ
   const statusEl = $('status');
+  statusEl.innerHTML = `❌ <strong>${errorMsg}</strong>`;
   statusEl.style.cssText = `
-    position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-    background: linear-gradient(#dc3545, #c82333); color: white;
-    padding: 12px 20px; font-size: 16px; font-weight: bold;
-    border-bottom: 3px solid #a71e2a; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    transform: translateY(-100%); transition: transform 0.3s ease;
+    position: fixed; top: 0; left: 0; right: 0; z-index: 10000;
+    background: linear-gradient(135deg, #dc3545, #c82333); 
+    color: white; padding: 15px 20px; font-size: 16px; font-weight: 500;
+    border-bottom: 3px solid #a71e2a; box-shadow: 0 4px 20px rgba(220,53,69,0.4);
+    transform: translateY(-100%); transition: all 0.4s cubic-bezier(0.25,0.46,0.45,0.94);
+    backdrop-filter: blur(10px);
   `;
-  statusEl.textContent = errorMsg;
   
-  // АНИМАЦИЯ: спускаем плашку вниз
-  setTimeout(() => statusEl.style.transform = 'translateY(0)', 100);
+  // АНИМАЦИЯ: показываем
+  requestAnimationFrame(() => {
+    statusEl.style.transform = 'translateY(0)';
+  });
   
-  // СКРЫВАЕМ через 5 секунд
+  // СКРЫВАЕМ через 6 секунд
   setTimeout(() => {
     statusEl.style.transform = 'translateY(-100%)';
-    setTimeout(() => statusEl.textContent = '', 300);
-  }, 5000);
-  }
-  
+    setTimeout(() => {
+      statusEl.style.display = 'none';
+    }, 400);
+  }, 6000);
+}
 
 window.onbeforeunload = () => {
   if(messageInterval) clearInterval(messageInterval);
