@@ -213,13 +213,23 @@ input,textarea{
   padding: 12px 20px; font-size: 16px; font-weight: bold;
   border-bottom: 3px solid #a71e2a; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   transform: translateY(-100%); transition: transform 0.3s ease;
-  display: none; /* Скрыт по умолчанию */
+  display: none;
 }
 
 #leave-group {
   background: linear-gradient(#dc3545, #c82333) !important;
   border-color: #bd2130 !important;
   margin-top: 8px;
+}
+
+.message.system-message {
+  background: #808080 !important;
+  border-left: 4px solid #28a745;
+  margin: 8px 0;
+}
+.message.system-message .system-time {
+  font-weight: bold;
+  font-size: 13px;
 }
 </style>
 </head>
@@ -449,6 +459,15 @@ async function loadMessages(){
     const d = document.createElement('div'); 
     d.className = 'message';
     const time = new Date(msg.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+
+    if (msg.type === 'system') {
+      d.className = 'message system-message';
+      d.innerHTML = `
+        <span class="time system-time">${time}</span>
+        <div>${render(msg)}</div>`;
+      $('messages').appendChild(d);
+      });
+    } else {
     d.innerHTML = `
       <span class="author">${msg.author}</span>
       <span class="time">${time}</span>
@@ -456,13 +475,13 @@ async function loadMessages(){
       ${msg.author===myNick?`
       <span class="msg-actions">
         <span onclick="editMsg('${msg.id}','${msg.content||''}')" title="Редактировать">✎</span>
-        <span onclick="delMsg('${msg.id}')" title="Удалить">🗑</span>
+        <span onclick="delMsg('${msg.id}')" title="Удалить">✖️</span>
       </span>`:''}
       <div>${render(msg)}</div>`;
     $('messages').appendChild(d);
   });
-  
-  // ✅ ВОЗВРАЩАЕМ прокрутку
+  }
+
   if (wasAtBottom) {
     messagesEl.scrollTop = messagesEl.scrollHeight; // вниз
   } else {
@@ -473,6 +492,7 @@ async function loadMessages(){
   }
 
 function render(m){
+  if(m.type==='system')return `<span style="color:#155724;font-weight:500">${m.content || 'Система'}</span>`;
   if(m.type==='image')return `<img src="${m.content}" width="220" style="border-radius:8px">`;
   if(m.type==='voice')return audio(m.content);
   return m.content.replace(/\n/g,'<br>');
@@ -642,26 +662,26 @@ $('join-btn').onclick=async()=>{
 };
 
 $('leave-group').onclick = async () => {
-  if (!currentGroup) return status({ status: 'Группа не выбрана' });
-  
-  if (!confirm(`Выйти из группы "${currentLi?.querySelector('div')?.textContent}"?`)) return;
+  if (!currentGroup || !confirm('Выйти из группы?')) return;
   
   const r = await fetch(`/groups/${currentGroup}/leave`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json' }
   });
   
   if (r.ok) {
     status({ status: '✔ Вы покинули группу' });
-    loadGroups(); 
-    $('messages').innerHTML = ''; 
+    if (messageInterval) clearInterval(messageInterval);
+    loadGroups();
+    $('messages').innerHTML = '';
     $('send').style.display = 'none';
-    currentGroup = null;
     $('group-actions').style.display = 'none';
+    currentGroup = null;
   } else {
     status(r);
   }
 };
+  
 
 /* EVENT HANDLERS */
 document.addEventListener('click',e=>{
