@@ -466,7 +466,7 @@ async function loadMessages(){
         <span class="time system-time">${time}</span>
         <div>${render(msg)}</div>`;
       $('messages').appendChild(d);
-      });
+    `;
     } else {
     d.innerHTML = `
       <span class="author">${msg.author}</span>
