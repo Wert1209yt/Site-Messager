@@ -466,10 +466,10 @@ async function loadMessages(){
         <span class="time system-time">${time}</span>
         <div>${render(msg)}</div>`;
       $('messages').appendChild(d);
-    `;
+    `
     } else {
     d.innerHTML = `
-      <span class="author">${msg.author}</span>
+      <span class="author">${msg.author || 'Неизвестно'}</span>
       <span class="time">${time}</span>
       ${msg.edited?'<span class="edited">(изменено)</span>':''}
       ${msg.author===myNick?`
@@ -478,7 +478,7 @@ async function loadMessages(){
         <span onclick="delMsg('${msg.id}')" title="Удалить">✖️</span>
       </span>`:''}
       <div>${render(msg)}</div>`;
-    }
+  }
   
   $('messages').appendChild(d);
   });
