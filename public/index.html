@@ -457,7 +457,6 @@ async function loadMessages(){
   
   m.forEach(msg => {
     const d = document.createElement('div'); 
-    d.className = 'message';
     const time = new Date(msg.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
 
     if (msg.type === 'system') {
@@ -468,6 +467,7 @@ async function loadMessages(){
       $('messages').appendChild(d);
     `
     } else {
+    d.className = 'message';
     d.innerHTML = `
       <span class="author">${msg.author || 'Неизвестно'}</span>
       <span class="time">${time}</span>
