@@ -478,9 +478,10 @@ async function loadMessages(){
         <span onclick="delMsg('${msg.id}')" title="Удалить">✖️</span>
       </span>`:''}
       <div>${render(msg)}</div>`;
-    $('messages').appendChild(d);
+    }
+  
+  $('messages').appendChild(d);
   });
-  }
 
   if (wasAtBottom) {
     messagesEl.scrollTop = messagesEl.scrollHeight; // вниз
