@@ -222,12 +222,12 @@ input,textarea{
   margin-top: 8px;
 }
 
-.message.system-message {
+.system-message {
   background: #808080 !important;
   border-left: 4px solid #28a745;
   margin: 8px 0;
 }
-.message.system-message .system-time {
+.system-message .system-time {
   font-weight: bold;
   font-size: 13px;
 }
@@ -464,7 +464,7 @@ async function loadMessages(){
     if (msg.type === 'system') {
       d.innerHTML = `
         <span class="time system-time">${time}</span>
-        <div>${render(msg)}</div>`;
+        <div>$${msg.content || 'Система'}</div>`;
     `
     } else {
     d.innerHTML = `
