@@ -444,10 +444,10 @@ function openChat(id,li){
 }
 
 /* MESSAGES */
+
 async function loadMessages(){
   const messagesEl = $('messages');
   const wasAtBottom = messagesEl.scrollTop + messagesEl.clientHeight >= messagesEl.scrollHeight - 100;
-  const prevScrollHeight = messagesEl.scrollHeight;
   
   const r = await fetch(API.getText+'?groupId='+currentGroup);
   if(!r.ok){ status(r); return; }
@@ -464,32 +464,27 @@ async function loadMessages(){
     if (msg.type === 'system') {
       d.innerHTML = `
         <span class="time system-time">${time}</span>
-        <div>$${msg.content || 'Система'}</div>`;
-    `
+        <div>${msg.content || 'Система'}</div>`;
     } else {
-    d.innerHTML = `
-      <span class="author">${msg.author || 'Неизвестно'}</span>
-      <span class="time">${time}</span>
-      ${msg.edited?'<span class="edited">(изменено)</span>':''}
-      ${msg.author===myNick?`
-      <span class="msg-actions">
-        <span onclick="editMsg('${msg.id}','${msg.content||''}')" title="Редактировать">✎</span>
-        <span onclick="delMsg('${msg.id}')" title="Удалить">✖️</span>
-      </span>`:''}
-      <div>${render(msg)}</div>`;
-  }
-  
-  $('messages').appendChild(d);
+      d.innerHTML = `
+        <span class="author">${msg.author || 'Неизвестно'}</span>
+        <span class="time">${time}</span>
+        ${msg.edited?'<span class="edited">(изменено)</span>':''}
+        ${msg.author===myNick?`
+        <span class="msg-actions">
+          <span onclick="editMsg('${msg.id}','${(msg.content||'').replace(/'/g,'&apos;')}')" title="Редактировать">✎</span>
+          <span onclick="delMsg('${msg.id}')" title="Удалить">✖️</span>
+        </span>`:''}
+        <div>${render(msg)}</div>`;
+    }
+    
+    $('messages').appendChild(d);
   });
-
+  
   if (wasAtBottom) {
-    messagesEl.scrollTop = messagesEl.scrollHeight; // вниз
-  } else {
-    // сохраняем позицию относительно низа
-    const scrollDiff = prevScrollHeight - messagesEl.scrollHeight;
-    messagesEl.scrollTop = Math.max(0, messagesEl.scrollTop + scrollDiff);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
   }
-  }
+}
 
 function render(m){
   if(m.type==='system')return `<span style="color:#155724;font-weight:500">${m.content || 'Система'}</span>`;
